@@ -1,0 +1,39 @@
+<div>
+    <!-- inscription utilisateur -->
+    <div class="inscription-form"> 
+        <h2>Inscription</h2> 
+        <form (ngSubmit)="register()" #inscriptionForm="ngForm"> 
+            <div> 
+                <label for="username">Nom d'utilisateur :</label> 
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    [(ngModel)]="newUser.username" 
+                    required 
+                /> 
+            </div> 
+            <div> 
+                <label for="email">Email :</label> 
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    [(ngModel)]="newUser.email" 
+                    required 
+                /> 
+            </div> 
+            <div> 
+                <label for="password">Mot de passe :</label> 
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    [(ngModel)]="newUser.password" 
+                    required 
+                /> 
+            </div> 
+            <button type="submit" 
+                [disabled]="inscriptionForm.invalid">S'inscrire</button> 
+        </form>
+</div>
