@@ -2,26 +2,26 @@
 import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
 import { AuthService } from '../services/auth';
-import { of, timer } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = async (route, state) => {
   const auth = inject(AuthService);
   const router = inject(Router);
 
-  if (typeof window === 'undefined') {
-    return of(true);
+  // Côté serveur : laisser passer pour le rendu initial
+  if (!auth.isBrowser()) {
+    return true;
   }
 
-  // ⏱️ Augmenter à 350-400ms pour être sûr
-  return timer(400).pipe(
-    map(() => {
-      const token = auth.getToken();
-      if (token) {
-        return true;
-      }
-      router.navigate(['/login']);
-      return false;
-    })
-  );
+  // ✅ Attendre l'initialisation de l'authentification
+  const isAuthenticated = await auth.initializeAuth();
+
+  if (isAuthenticated) {
+    console.log('✅ Authentifié - Accès autorisé');
+    return true;
+  }
+
+  // Pas de token : redirection vers login
+  console.log('🔒 Non authentifié - Redirection vers login');
+  router.navigate(['/login']);
+  return false;
 };

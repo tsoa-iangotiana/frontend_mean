@@ -1,27 +1,47 @@
-// interceptors/auth.interceptor.ts
 import { Injectable } from '@angular/core';
-import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpRequest, HttpHandler, HttpEvent, HttpInterceptor, HttpErrorResponse } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError } from 'rxjs/operators';
+import { Router } from '@angular/router';
 import { AuthService } from '../services/auth';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
-  constructor(private authService: AuthService) {}
+
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    // CORRECTION: Appeler getToken() comme une méthode
-    const token = this.authService.getToken();
-    
-    console.log('🔍 Intercepteur - Token:', token ? 'Présent' : 'Absent');
-    
+
+    let token = this.authService.getToken();
+
+    // 🔥 fallback F5
+    if (!token && typeof window !== 'undefined') {
+      token = localStorage.getItem('token');
+    }
+
     if (token && !request.url.includes('/auth/')) {
-      console.log('✅ Ajout du token à la requête:', request.url);
-      const cloned = request.clone({
+      request = request.clone({
         headers: request.headers.set('Authorization', `Bearer ${token}`)
       });
-      return next.handle(cloned);
     }
-    
-    return next.handle(request);
+
+    return next.handle(request).pipe(
+
+      catchError((error: HttpErrorResponse) => {
+
+        if (error.status === 401) {
+          console.warn("🔐 401 détecté → déconnexion");
+
+          this.authService.removeToken(); // supprime token
+          this.router.navigate(['/login']);
+        }
+
+        return throwError(() => error);
+      })
+
+    );
   }
 }

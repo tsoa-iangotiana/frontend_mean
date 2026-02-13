@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { ArticleService } from '../../../services/article/article.service' // Corriger le chemin
 import { AuthService } from '../../../services/auth'; // Corriger le chemin
 import { Router } from '@angular/router'; // Ajouter Router
+import { Console } from 'console';
 
 @Component({
   selector: 'app-article-list',
@@ -27,24 +28,68 @@ export class ArticleList implements OnInit {
     console.log('🏗️ Constructeur ArticleList');
   }
 
- async ngOnInit() {
+async ngOnInit() {
   console.log('🏁 Initialisation ArticleList');
   
-  if (typeof window !== 'undefined') {
-    // ✅ Attendre l'initialisation de l'authentification
-    const isAuthenticated = await this.authService.initializeAuth();
-    
-    if (!isAuthenticated) {
-      console.log('🔒 Non authentifié - Redirection vers login');
-      this.router.navigate(['/login']);
-      return;
-    }
-    
-    console.log('✅ Authentifié - Chargement des articles');
+  // ✅ PROTECTION 1 : Bloquer tout côté serveur
+  if (!this.authService.isBrowser()) {
+    console.log('🖥️ SSR - AUCUNE action (pas de chargement articles)');
+    return; // ← Sortir complètement
   }
+
+  // ✅ PROTECTION 2 : Vérification auth côté client
+  console.log('🌐 Client détecté - Vérification auth');
+  await this.authService.initializeAuth();
+
+  if (!this.authService.isLoggedIn()) {
+    console.log('🔒 Non authentifié - Redirection immédiate vers login');
+    this.router.navigate(['/login']);
+    return; // ← Sortir sans charger les articles
+  }
+
+  console.log('✅ Authentifié - Chargement des articles autorisé');
   this.loadArticles();
 }
 
+loadArticles() {
+  // ✅ PROTECTION 3 : Triple sécurité
+  if (!this.authService.isBrowser()) {
+    console.error('🚫 Tentative loadArticles() côté serveur - BLOQUÉ');
+    return;
+  }
+
+  if (!this.authService.isLoggedIn()) {
+    console.error('🚫 Tentative loadArticles() sans auth - BLOQUÉ');
+    this.router.navigate(['/login']);
+    return;
+  }
+
+  this.isLoading = true;
+
+  this.articleService.getArticles().subscribe({
+    next: (data: any[]) => {
+      console.log('📦 Articles reçus:', data);
+      this.articles = Array.isArray(data) ? data : [];
+      this.isLoading = false;
+      this.cdr.detectChanges();
+    },
+    error: (err) => {
+      console.error('❌ Erreur chargement:', err);
+      
+      if (err.status === 401) {
+        console.log('🔒 Token invalide/expiré - Déconnexion forcée');
+        this.authService.removeToken();
+        this.router.navigate(['/login']);
+        return;
+      }
+      
+      this.articles = [];
+      this.isLoading = false;
+      this.errorMessage = 'Erreur de chargement des articles';
+      this.cdr.detectChanges();
+    }
+  });
+}
   // loadArticles() {
   //   console.log('🔄 Début chargement des articles...');
   //   this.isLoading = true;
@@ -108,28 +153,34 @@ export class ArticleList implements OnInit {
 //     }
 //   });
 // }
-loadArticles() {
-  this.isLoading = true;
+// loadArticles() {
+//   this.isLoading = true;
 
-  this.articleService.getArticles().subscribe({
-    next: (data: any[]) => {
-      console.log('📦 Articles reçus:', data);
-
-      this.articles = Array.isArray(data) ? data : [];
-      this.isLoading = false;
-
-      // ✅ FORCER Angular à mettre à jour le template
-      this.cdr.detectChanges();
-    },
-    error: (err) => {
-      console.error('❌ Erreur chargement:', err);
-      this.articles = [];
-      this.isLoading = false;
-      this.cdr.detectChanges();
-    }
-  });
-}
-
+//   this.articleService.getArticles().subscribe({
+//     next: (data: any[]) => {
+//       console.log('📦 Articles reçus:', data);
+//       this.articles = Array.isArray(data) ? data : [];
+//       this.isLoading = false;
+//       this.cdr.detectChanges();
+//     },
+//     error: (err) => {
+//       console.error('❌ Erreur chargement:', err);
+      
+//       // ✅ Si 401, c'est que le token est invalide/expiré
+//       if (err.status === 401) {
+//         console.log('🔒 Token invalide - Déconnexion');
+//         this.authService.removeToken();
+//         this.router.navigate(['/login']);
+//         return;
+//       }
+      
+//       this.articles = [];
+//       this.isLoading = false;
+//       this.errorMessage = 'Erreur de chargement des articles';
+//       this.cdr.detectChanges();
+//     }
+//   });
+// }
   deleteArticle(articleId: string) {
     if (confirm('Voulez-vous vraiment supprimer cet article ?')) {
       console.log('🗑️ Suppression article:', articleId);
