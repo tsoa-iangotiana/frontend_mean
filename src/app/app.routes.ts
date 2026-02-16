@@ -7,7 +7,7 @@ import { authGuard } from './guards/auth.guard';
 import { Login } from './components/user/login/login';
 export const routes: Routes = [
     {path : 'login', loadComponent: () => import('./components/user/login/login').then(m => m.Login)},
-    {path : 'inscription/:role', component : Inscription},
+    {path : 'inscription/:role', component : Inscription , data: { renderMode: 'client' }},
     {path : 'articles', component : ArticleList, canActivate: [authGuard]},
     {path : '', component: Login }
 //      {

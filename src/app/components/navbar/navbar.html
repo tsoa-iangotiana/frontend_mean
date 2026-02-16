@@ -1,0 +1,263 @@
+<!-- navbar.html - Version corrigée - superposition et scroll résolus -->
+<!-- Structure principale -->
+<div class="app-wrapper">
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.collapsed]="isSidebarCollapsed" [class.show]="isSidebarMobileShow">
+    <div class="sidebar-header">
+      <a class="sidebar-logo" routerLink="/">
+        <i class="fas fa-store-alt me-2"></i>
+        <span class="logo-text" *ngIf="!isSidebarCollapsed">Centre Commercial</span>
+      </a>
+    </div>
+
+    <!-- Menu sidebar principal -->
+    <ul class="sidebar-nav">
+      <!-- Items de navigation principaux -->
+      <ng-container *ngFor="let item of navItems">
+        <!-- Item simple -->
+        <li class="sidebar-item" *ngIf="!item.children">
+          <a class="sidebar-link" [routerLink]="[item.route]" routerLinkActive="active" 
+             [routerLinkActiveOptions]="{ exact: item.exact }" (click)="closeSidebarMobile()">
+            <i class="fas fa-{{ item.icon }}"></i>
+            <span class="link-text" *ngIf="!isSidebarCollapsed">{{ item.label }}</span>
+            <span class="badge bg-danger ms-auto" *ngIf="item.badge" [class.hide]="isSidebarCollapsed">
+              {{ item.badge }}
+            </span>
+          </a>
+        </li>
+
+        <!-- Item avec sous-menu -->
+        <li class="sidebar-item" *ngIf="item.children" [class.open]="isSidebarCollapsed ? false : isSubmenuOpen(item.label)">
+          <a class="sidebar-link" href="javascript:void(0)" (click)="toggleSubmenu(item.label)">
+            <i class="fas fa-{{ item.icon }}"></i>
+            <span class="link-text" *ngIf="!isSidebarCollapsed">{{ item.label }}</span>
+            <i class="fas fa-chevron-down ms-auto" *ngIf="!isSidebarCollapsed" 
+               [class.rotate]="isSubmenuOpen(item.label)"></i>
+          </a>
+          <ul class="sidebar-submenu" *ngIf="!isSidebarCollapsed">
+            <li *ngFor="let child of item.children">
+              <a class="sidebar-link" [routerLink]="[child.route]" routerLinkActive="active" 
+                 [routerLinkActiveOptions]="{ exact: child.exact }" (click)="closeSidebarMobile()">
+                <i class="fas fa-{{ child.icon }}"></i>
+                <span class="link-text">{{ child.label }}</span>
+              </a>
+            </li>
+          </ul>
+        </li>
+      </ng-container>
+
+      <!-- Séparateur -->
+      <li class="sidebar-divider" *ngIf="currentUser"></li>
+
+      <!-- Section utilisateur dans sidebar (mobile) -->
+      <li class="sidebar-item d-lg-none" *ngIf="currentUser">
+        <div class="sidebar-heading">
+          <i class="fas fa-user me-2"></i>
+          <span *ngIf="!isSidebarCollapsed">Mon Compte</span>
+        </div>
+      </li>
+
+      <!-- Profil dans sidebar (mobile) -->
+      <li class="sidebar-item d-lg-none" *ngIf="currentUser">
+        <a class="sidebar-link" routerLink="/profile" routerLinkActive="active" (click)="closeSidebarMobile()">
+          <i class="fas fa-id-card"></i>
+          <span class="link-text" *ngIf="!isSidebarCollapsed">Mon Profil</span>
+        </a>
+      </li>
+
+      <!-- Déconnexion dans sidebar (mobile) -->
+      <li class="sidebar-item d-lg-none" *ngIf="currentUser">
+        <a class="sidebar-link text-danger" (click)="logout(); closeSidebarMobile()">
+          <i class="fas fa-sign-out-alt"></i>
+          <span class="link-text" *ngIf="!isSidebarCollapsed">Déconnexion</span>
+        </a>
+      </li>
+    </ul>
+
+    <!-- Bouton toggle sidebar (desktop) -->
+    <div class="sidebar-toggle d-none d-lg-flex" (click)="toggleSidebar()">
+      <i class="fas fa-chevron-left" [class.rotate-180]="isSidebarCollapsed"></i>
+    </div>
+
+    <!-- Footer sidebar -->
+    <div class="sidebar-footer" *ngIf="currentUser && !isSidebarCollapsed">
+      <div class="user-info">
+        <div class="user-avatar-sm">
+          <i class="fas fa-user-circle"></i>
+        </div>
+        <div class="user-details">
+          <div class="user-name">{{ currentUser.username }}</div>
+          <div class="user-role">
+            <span class="badge {{ getRoleBadgeClass() }}">{{ getRoleLabel() }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Overlay mobile -->
+  <div class="sidebar-overlay" [class.show]="isSidebarMobileShow" (click)="closeSidebarMobile()"></div>
+
+  <!-- Contenu principal -->
+  <div class="main-content" [class.sidebar-collapsed]="isSidebarCollapsed">
+    <!-- Navbar principale - sticky -->
+    <nav class="navbar navbar-expand-lg">
+      <div class="container-fluid">
+        <!-- Bouton menu mobile -->
+        <button class="btn btn-link text-white me-2 d-lg-none" type="button" (click)="toggleSidebarMobile()">
+          <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Logo pour mobile -->
+        <a class="navbar-brand d-flex align-items-center d-lg-none" routerLink="/">
+          <div class="brand-icon me-2">
+            <i class="fas fa-store-alt fa-lg"></i>
+          </div>
+          <span class="brand-text">
+            <span class="fw-bold">Centre</span> Commercial
+          </span>
+        </a>
+
+        <!-- Menu navbar droite -->
+        <ul class="navbar-nav ms-auto">
+          <!-- Panier (pour acheteurs) -->
+          <li class="nav-item" *ngIf="userRole === 'acheteur'">
+            <a class="nav-link position-relative" routerLink="/panier" routerLinkActive="active" (click)="closeSidebarMobile()">
+              <i class="fas fa-shopping-cart"></i>
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge"
+                    *ngIf="cartCount > 0">
+                {{ cartCount }}
+              </span>
+            </a>
+          </li>
+
+          <!-- Menu utilisateur desktop -->
+          <ng-container *ngIf="currentUser; else loginButtons">
+            <li class="nav-item dropdown" ngbDropdown container="body">
+              <a class="nav-link d-flex align-items-center" href="#" id="userDropdown" 
+                 ngbDropdownToggle role="button">
+                <div class="user-avatar me-1">
+                  <i class="fas fa-user-circle fa-lg"></i>
+                  <span class="status-indicator" *ngIf="isOnline"></span>
+                </div>
+                <span class="d-none d-lg-inline">{{ currentUser.username }}</span>
+                <span class="badge {{ getRoleBadgeClass() }} ms-2 d-none d-lg-inline">
+                  {{ getRoleLabel() }}
+                </span>
+              </a>
+              <div class="dropdown-menu dropdown-menu-end dropdown-menu-dark" ngbDropdownMenu>
+                <!-- En-tête profil -->
+                <div class="dropdown-header">
+                  <div class="d-flex align-items-center">
+                    <i class="fas fa-user-circle fa-2x me-2"></i>
+                    <div>
+                      <div class="fw-bold">{{ currentUser.username }}</div>
+                      <small class="text-muted">{{ currentUser.email }}</small>
+                    </div>
+                  </div>
+                </div>
+                <div class="dropdown-divider"></div>
+
+                <!-- Liens communs -->
+                <a class="dropdown-item" routerLink="/profile" (click)="closeSidebarMobile()">
+                  <i class="fas fa-id-card me-2"></i>Mon Profil
+                </a>
+                
+                <!-- Liens spécifiques au rôle -->
+                <ng-container [ngSwitch]="userRole">
+                  <!-- Admin -->
+                  <ng-container *ngSwitchCase="'admin'">
+                    <div class="dropdown-divider"></div>
+                    <h6 class="dropdown-header">Administration</h6>
+                    <a class="dropdown-item" routerLink="/admin/dashboard" (click)="closeSidebarMobile()">
+                      <i class="fas fa-chart-pie me-2"></i>Dashboard
+                    </a>
+                    <a class="dropdown-item" routerLink="/admin/boxes" (click)="closeSidebarMobile()">
+                      <i class="fas fa-cubes me-2"></i>Boxes
+                    </a>
+                    <a class="dropdown-item" routerLink="/admin/paiements" (click)="closeSidebarMobile()">
+                      <i class="fas fa-credit-card me-2"></i>Paiements
+                    </a>
+                    <a class="dropdown-item" routerLink="/admin/tickets" (click)="closeSidebarMobile()">
+                      <i class="fas fa-ticket-alt me-2"></i>Tickets
+                    </a>
+                    <a class="dropdown-item" routerLink="/admin/categories" (click)="closeSidebarMobile()">
+                      <i class="fas fa-tags me-2"></i>Catégories
+                    </a>
+                    <a class="dropdown-item" routerLink="/admin/utilisateurs" (click)="closeSidebarMobile()">
+                      <i class="fas fa-users me-2"></i>Utilisateurs
+                    </a>
+                  </ng-container>
+
+                  <!-- Boutique -->
+                  <ng-container *ngSwitchCase="'boutique'">
+                    <div class="dropdown-divider"></div>
+                    <h6 class="dropdown-header">Gestion boutique</h6>
+                    <a class="dropdown-item" routerLink="/boutique/dashboard" (click)="closeSidebarMobile()">
+                      <i class="fas fa-chart-line me-2"></i>Dashboard
+                    </a>
+                    <a class="dropdown-item" routerLink="/boutique/produits" (click)="closeSidebarMobile()">
+                      <i class="fas fa-boxes me-2"></i>Mes Produits
+                    </a>
+                    <a class="dropdown-item" routerLink="/boutique/commandes" (click)="closeSidebarMobile()">
+                      <i class="fas fa-shopping-bag me-2"></i>Commandes
+                    </a>
+                    <a class="dropdown-item" routerLink="/boutique/promotions" (click)="closeSidebarMobile()">
+                      <i class="fas fa-percentage me-2"></i>Promotions
+                    </a>
+                    <a class="dropdown-item" routerLink="/boutique/stats" (click)="closeSidebarMobile()">
+                      <i class="fas fa-chart-bar me-2"></i>Statistiques
+                    </a>
+                  </ng-container>
+
+                  <!-- Acheteur -->
+                  <ng-container *ngSwitchCase="'acheteur'">
+                    <div class="dropdown-divider"></div>
+                    <h6 class="dropdown-header">Mes achats</h6>
+                    <a class="dropdown-item" routerLink="/commandes" (click)="closeSidebarMobile()">
+                      <i class="fas fa-truck me-2"></i>Mes Commandes
+                    </a>
+                    <a class="dropdown-item" routerLink="/favoris" (click)="closeSidebarMobile()">
+                      <i class="fas fa-heart me-2"></i>Favoris
+                    </a>
+                  </ng-container>
+                </ng-container>
+
+                <div class="dropdown-divider"></div>
+                
+                <!-- Déconnexion -->
+                <a class="dropdown-item text-danger" (click)="logout(); closeSidebarMobile()">
+                  <i class="fas fa-sign-out-alt me-2"></i>Déconnexion
+                </a>
+
+                <!-- Footer dropdown -->
+                <div class="dropdown-footer text-muted small text-center">
+                  Connecté en tant que {{ getRoleLabel() }}
+                </div>
+              </div>
+            </li>
+          </ng-container>
+
+          <!-- Boutons de connexion/inscription pour les visiteurs -->
+          <ng-template #loginButtons>
+            <li class="nav-item">
+              <a class="nav-link" routerLink="/login" routerLinkActive="active" (click)="closeSidebarMobile()">
+                <i class="fas fa-sign-in-alt me-1"></i>Connexion
+              </a>
+            </li>
+            <li class="nav-item ms-2">
+              <a class="nav-link btn btn-outline-light btn-sm px-3" routerLink="/register" (click)="closeSidebarMobile()">
+                <i class="fas fa-user-plus me-1"></i>S'inscrire
+              </a>
+            </li>
+          </ng-template>
+        </ul>
+      </div>
+    </nav>
+
+    <!-- Contenu de la page -->
+    <div class="content-wrapper">
+      <router-outlet></router-outlet>
+    </div>
+  </div>
+</div>

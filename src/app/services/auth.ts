@@ -1,6 +1,7 @@
 // services/auth.service.ts
 import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 export interface User {
   _id: string;
@@ -14,11 +15,19 @@ export interface User {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly TOKEN_KEY = 'token';
+  private readonly USER_KEY = 'user';
   private token: string | null = null;
   private authReady = false;
   private initPromise: Promise<boolean> | null = null;
+  private currentUserSubject = new BehaviorSubject<User | null>(null);
+  public currentUser$: Observable<User | null> = this.currentUserSubject.asObservable();
 
-  constructor(@Inject(PLATFORM_ID) private platformId: any) {}
+  constructor(@Inject(PLATFORM_ID) private platformId: any) {
+    // ✅ Optionnel : restaurer au moment de la création du service
+    if (this.isBrowser()) {
+      this.restoreUserFromStorage();
+    }
+  }
 
   setToken(token: string): void {
     this.token = token;
@@ -51,10 +60,11 @@ export class AuthService {
     this.token = null;
     if (this.isBrowser()) {
       localStorage.removeItem(this.TOKEN_KEY);
+      localStorage.removeItem(this.USER_KEY);
       console.log('🔓 Token supprimé');
     }
-    
-    // ✅ CRUCIAL : Réinitialiser le cache après déconnexion
+
+    this.currentUserSubject.next(null);
     this.resetAuthCache();
   }
 
@@ -78,6 +88,23 @@ export class AuthService {
     console.log('🔄 Réinitialisation du cache auth');
     this.initPromise = null;
     this.authReady = false;
+  }
+
+  // ✅ NOUVEAU : Restaurer l'utilisateur depuis localStorage
+  private restoreUserFromStorage(): void {
+    if (!this.isBrowser()) return;
+    
+    try {
+      const storedUser = localStorage.getItem(this.USER_KEY);
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        this.currentUserSubject.next(user);
+        console.log('👤 Utilisateur restauré depuis localStorage:', user?.username);
+      }
+    } catch (e) {
+      console.error('❌ Erreur lors de la restauration de l\'utilisateur:', e);
+      localStorage.removeItem(this.USER_KEY);
+    }
   }
 
   initializeAuth(): Promise<boolean> {
@@ -114,7 +141,9 @@ export class AuthService {
           if (expDate < now) {
             console.log('⏰ Token expiré - Suppression automatique');
             localStorage.removeItem(this.TOKEN_KEY);
+            localStorage.removeItem(this.USER_KEY);
             this.token = null;
+            this.currentUserSubject.next(null);
             this.authReady = true;
             resolve(false);
             return;
@@ -125,6 +154,10 @@ export class AuthService {
         
         this.token = storedToken;
         console.log('🔐 Token restauré:', storedToken.substring(0, 30) + '...');
+        
+        // ✅ NOUVEAU : Restaurer l'utilisateur depuis localStorage
+        this.restoreUserFromStorage();
+        
         this.authReady = true;
         resolve(true);
       } else {
@@ -135,5 +168,18 @@ export class AuthService {
     });
 
     return this.initPromise;
+  }
+  
+  setCurrentUser(user: User | null): void {
+    if (user && this.isBrowser()) {
+      localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    } else if (this.isBrowser()) {
+      localStorage.removeItem(this.USER_KEY);
+    }
+    this.currentUserSubject.next(user);
+  }
+
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
   }
 }
