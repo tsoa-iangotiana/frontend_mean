@@ -67,7 +67,8 @@
         },
         "test": {
           "builder": "@angular/build:unit-test"
-        }
+        },
+        "testChange": "ok pour push"
       }
     }
   }
