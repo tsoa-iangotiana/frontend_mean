@@ -7,8 +7,9 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:frontend_mean": "node dist/frontend_mean/server/server.mjs"
-  },
+    "serve:ssr:frontend_mean": "node dist/frontend_mean/server/server.mjs",
+  "build:ssr": "ng build && ng run frontend_mean:server",
+  "serve:ssr": "node dist/frontend_mean/server/main.js"  },
   "prettier": {
     "printWidth": 100,
     "singleQuote": true,
