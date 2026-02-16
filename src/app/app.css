@@ -1,0 +1,17 @@
+/* styles.css - Global */
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Force le contenu à ne pas être caché sous la navbar */
+router-outlet + * {
+  display: block;
+  margin-top: 60px !important;
+}

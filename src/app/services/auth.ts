@@ -1,6 +1,7 @@
 // services/auth.service.ts
 import { Injectable, PLATFORM_ID, Inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 export interface User {
   _id: string;
@@ -14,9 +15,12 @@ export interface User {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly TOKEN_KEY = 'token';
+  private readonly USER_KEY = 'user';
   private token: string | null = null;
   private authReady = false;
   private initPromise: Promise<boolean> | null = null;
+  private currentUserSubject = new BehaviorSubject<User | null>(null);
+  public currentUser$: Observable<User | null> = this.currentUserSubject.asObservable();
 
   constructor(@Inject(PLATFORM_ID) private platformId: any) {}
 
@@ -51,10 +55,11 @@ export class AuthService {
     this.token = null;
     if (this.isBrowser()) {
       localStorage.removeItem(this.TOKEN_KEY);
+      localStorage.removeItem(this.USER_KEY);
       console.log('🔓 Token supprimé');
     }
-    
-    // ✅ CRUCIAL : Réinitialiser le cache après déconnexion
+
+    this.currentUserSubject.next(null);
     this.resetAuthCache();
   }
 
@@ -135,5 +140,17 @@ export class AuthService {
     });
 
     return this.initPromise;
+  }
+  setCurrentUser(user: User | null): void {
+    if (user && this.isBrowser()) {
+      localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    } else if (this.isBrowser()) {
+      localStorage.removeItem(this.USER_KEY);
+    }
+    this.currentUserSubject.next(user);
+  }
+
+  getCurrentUser(): User | null {
+    return this.currentUserSubject.value;
   }
 }

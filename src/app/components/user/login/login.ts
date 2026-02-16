@@ -36,6 +36,7 @@ login() {
       if (response.token) {
         // Stocker le token
         this.authService.setToken(response.token);
+        this.authService.setCurrentUser(response.user); 
         console.log('Token stocké:', response.token.substring(0, 20) + '...');
         
         // VÉRIFIEZ LE TOKEN AVANT REDIRECTION
