@@ -1,6 +1,6 @@
-import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID } from '@angular/core';
-import { RouterModule, Router } from '@angular/router';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, Input } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { RouterModule, Router } from '@angular/router';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../../services/auth';
 import { Subscription } from 'rxjs';
@@ -14,42 +14,43 @@ interface NavItem {
   badge?: number | null;
 }
 
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  role: 'admin' | 'boutique' | 'acheteur' | 'guest';
+}
+
 @Component({
   selector: 'app-navbar',
   standalone: true,
   templateUrl: './navbar.html',
   styleUrls: ['./navbar.css'],
-  imports: [
-    CommonModule,
-    RouterModule,
-    NgbModule
-  ],
+  imports: [CommonModule, RouterModule, NgbModule],
 })
 export class NavbarComponent implements OnInit, OnDestroy {
-  // États sidebar
+  // ===== INPUTS =====
+  @Input() pageTitle: string = 'Centre Commercial';
+
+  // ===== ÉTATS SIDEBAR ET MOBILE =====
   isSidebarCollapsed = false;
   isSidebarMobileShow = false;
-  
-  // États utilisateur
+  isMobile = false;
+
+  // ===== ÉTATS UTILISATEUR =====
   currentUser: any = null;
-  userRole: string = '';
-  isOnline = true;
-  cartCount = 0;
-  
-  // Sous-menus ouverts
+  userRole: string = 'guest';
+
+  // ===== NAVIGATION =====
+  navItems: NavItem[] = [];
   openSubmenus: Set<string> = new Set();
-  
-  // Subscriptions
+
+  // ===== SUBSCRIPTIONS =====
   private subscriptions: Subscription[] = [];
-  
-  // Flag pour vérifier si on est dans le navigateur
   private isBrowser: boolean;
 
-  // Navigation items
-  navItems: NavItem[] = [];
-
   constructor(
-    public authService: AuthService,
+    private authService: AuthService,
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
@@ -66,53 +67,42 @@ export class NavbarComponent implements OnInit, OnDestroy {
       })
     );
 
-    // Simuler un compteur panier (à remplacer par votre service)
-    this.loadCartCount();
-    
     // Vérifier la taille d'écran au démarrage (seulement dans le navigateur)
     if (this.isBrowser) {
       this.checkScreenSize();
-      
+
       // Écouter les changements de taille d'écran
       window.addEventListener('resize', () => this.checkScreenSize());
     }
   }
 
   ngOnDestroy(): void {
-    this.subscriptions.forEach(sub => sub.unsubscribe());
-    
-    // Nettoyer l'event listener seulement si on est dans le navigateur
+    this.subscriptions.forEach((sub) => sub.unsubscribe());
+
     if (this.isBrowser) {
       window.removeEventListener('resize', () => this.checkScreenSize());
     }
   }
 
   /**
-   * Construit la navigation en fonction du rôle
+   * Construit la navigation en fonction du rôle utilisateur
    */
   private buildNavigation(): void {
     const baseNav: NavItem[] = [
       {
-        label: 'Accueil',
+        label: 'Tableau de bord',
         route: '/',
         icon: 'home',
-        exact: true
-      },
-      {
-        label: 'Boutiques',
-        route: '/boutiques',
-        icon: 'store-alt',
-        exact: false
+        exact: true,
       },
       {
         label: 'Produits',
         route: '/produits',
-        icon: 'box',
-        exact: false
-      }
+        icon: 'shopping-bag',
+        exact: false,
+      },
     ];
 
-    // Ajouter les items selon le rôle
     switch (this.userRole) {
       case 'admin':
         this.navItems = [
@@ -122,83 +112,114 @@ export class NavbarComponent implements OnInit, OnDestroy {
             icon: 'crown',
             exact: false,
             children: [
-              { label: 'Dashboard', route: '/admin/dashboard', icon: 'chart-pie', exact: false },
-              { label: 'Boxes', route: '/admin/boxes', icon: 'cubes', exact: false },
-              { label: 'Paiements', route: '/admin/paiements', icon: 'credit-card', exact: false },
-              { label: 'Tickets', route: '/admin/tickets', icon: 'ticket-alt', exact: false },
-              { label: 'Catégories', route: '/admin/categories', icon: 'tags', exact: false },
-              { label: 'Utilisateurs', route: '/admin/utilisateurs', icon: 'users', exact: false }
-            ]
-          }
+              {
+                label: 'Clients',
+                route: '/admin/clients',
+                icon: 'users',
+                exact: false,
+              },
+              {
+                label: 'Messages',
+                route: '/admin/messages',
+                icon: 'comments',
+                exact: false,
+              },
+              {
+                label: 'Aide',
+                route: '/admin/help',
+                icon: 'question-circle',
+                exact: false,
+              },
+            ],
+          },
+          {
+            label: 'Sécurité',
+            route: '/admin/security',
+            icon: 'lock',
+            exact: false,
+          },
         ];
         break;
-        
+
       case 'boutique':
         this.navItems = [
           ...baseNav,
           {
-            label: 'Boutique',
+            label: 'Ma Boutique',
             icon: 'store',
             exact: false,
             children: [
-              { label: 'Dashboard', route: '/boutique/dashboard', icon: 'chart-line', exact: false },
-              { label: 'Mes Produits', route: '/boutique/produits', icon: 'boxes', exact: false },
-              { label: 'Commandes', route: '/boutique/commandes', icon: 'shopping-bag', exact: false },
-              { label: 'Promotions', route: '/boutique/promotions', icon: 'percentage', exact: false },
-              { label: 'Statistiques', route: '/boutique/stats', icon: 'chart-bar', exact: false }
-            ]
-          }
+              {
+                label: 'Mes Produits',
+                route: '/boutique/produits',
+                icon: 'box',
+                exact: false,
+              },
+              {
+                label: 'Commandes',
+                route: '/boutique/commandes',
+                icon: 'truck',
+                exact: false,
+              },
+              {
+                label: 'Promotions',
+                route: '/boutique/promotions',
+                icon: 'percentage',
+                exact: false,
+              },
+              {
+                label: 'Statistiques',
+                route: '/boutique/stats',
+                icon: 'chart-bar',
+                exact: false,
+              },
+            ],
+          },
         ];
         break;
-        
+
       case 'acheteur':
         this.navItems = [
           ...baseNav,
           {
-            label: 'Mes achats',
+            label: 'Mes Achats',
             icon: 'shopping-cart',
             exact: false,
             children: [
-              { label: 'Mes Commandes', route: '/commandes', icon: 'truck', exact: false },
-              { label: 'Favoris', route: '/favoris', icon: 'heart', exact: false }
-            ]
-          }
+              {
+                label: 'Commandes',
+                route: '/commandes',
+                icon: 'list',
+                exact: false,
+              },
+              {
+                label: 'Favoris',
+                route: '/favoris',
+                icon: 'heart',
+                exact: false,
+              },
+            ],
+          },
         ];
         break;
-        
+
       default:
         this.navItems = baseNav;
     }
   }
 
   /**
-   * Charge le nombre d'articles dans le panier
+   * Vérifie la taille d'écran et ajuste l'affichage
    */
-  private loadCartCount(): void {
-    // À remplacer par votre service panier
-    // this.subscriptions.push(
-    //   this.cartService.cartCount$.subscribe(count => {
-    //     this.cartCount = count;
-    //   })
-    // );
-    
-    // Simulation
-    this.cartCount = 3;
-  }
-
-  /**
-   * Vérifie la taille d'écran pour ajuster la sidebar
-   */
-  checkScreenSize(): void {
-    // Vérifier qu'on est dans le navigateur
+  private checkScreenSize(): void {
     if (!this.isBrowser) return;
-    
-    if (window.innerWidth < 992) {
+
+    this.isMobile = window.innerWidth < 992;
+
+    if (this.isMobile) {
       this.isSidebarCollapsed = false;
-      // Sur mobile, on ferme la sidebar par défaut
       this.isSidebarMobileShow = false;
     }
-    // Pas de else nécessaire car on garde l'état existant sur desktop
   }
 
   /**
@@ -206,8 +227,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
    */
   toggleSidebar(): void {
     this.isSidebarCollapsed = !this.isSidebarCollapsed;
-    
-    // Fermer tous les sous-menus quand on collapse
+
     if (this.isSidebarCollapsed) {
       this.openSubmenus.clear();
     }
@@ -218,10 +238,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
    */
   toggleSidebarMobile(): void {
     if (!this.isBrowser) return;
-    
+
     this.isSidebarMobileShow = !this.isSidebarMobileShow;
-    
-    // Empêcher le scroll du body quand sidebar mobile ouverte
+
     if (this.isSidebarMobileShow) {
       document.body.style.overflow = 'hidden';
     } else {
@@ -234,7 +253,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
    */
   closeSidebarMobile(): void {
     if (!this.isBrowser) return;
-    
+
     if (this.isSidebarMobileShow) {
       this.isSidebarMobileShow = false;
       document.body.style.overflow = '';
@@ -260,27 +279,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Déconnexion
+   * Récupère les initiales de l'utilisateur
    */
-  logout(): void {
-    this.authService.removeToken();
-    this.router.navigate(['/login']);
-    this.closeSidebarMobile();
-    
-    // Réinitialiser les états
-    this.openSubmenus.clear();
-  }
+  getUserInitials(): string {
+    if (!this.currentUser) return '?';
 
-  /**
-   * Retourne la classe CSS pour le badge de rôle
-   */
-  getRoleBadgeClass(): string {
-    switch (this.userRole) {
-      case 'admin': return 'bg-danger';
-      case 'boutique': return 'bg-success';
-      case 'acheteur': return 'bg-info';
-      default: return 'bg-secondary';
+    const parts = this.currentUser.username.split(' ');
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
     }
+    return this.currentUser.username.substring(0, 2).toUpperCase();
   }
 
   /**
@@ -288,10 +296,24 @@ export class NavbarComponent implements OnInit, OnDestroy {
    */
   getRoleLabel(): string {
     switch (this.userRole) {
-      case 'admin': return 'Administrateur';
-      case 'boutique': return 'Commerçant';
-      case 'acheteur': return 'Client';
-      default: return 'Visiteur';
+      case 'admin':
+        return 'Administrateur';
+      case 'boutique':
+        return 'Commerçant';
+      case 'acheteur':
+        return 'Client';
+      default:
+        return 'Visiteur';
     }
+  }
+
+  /**
+   * Déconnexion
+   */
+  logout(): void {
+    // this.authService.logout();
+    this.openSubmenus.clear();
+    this.router.navigate(['/login']);
+    this.closeSidebarMobile();
   }
 }

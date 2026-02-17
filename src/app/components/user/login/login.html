@@ -1,17 +1,82 @@
-<div class="login-form">
-  <h2>Connexion</h2>
-  <form (ngSubmit)="login()" #loginForm="ngForm">
-    
-    <div>
-      <label for="email">Email :</label>
-      <input type="email" id="email" name="email" [(ngModel)]="email" required>
+<!-- login.html -->
+<div class="login-page">
+  <div class="login-container">
+    <div class="login-card">
+      <!-- Header de la card -->
+      <div class="login-header">
+        <div class="login-logo">
+          <i class="fas fa-cube"></i>
+        </div>
+        <h1>Centre Commercial</h1>
+        <p>Bienvenue</p>
+      </div>
+
+      <!-- Formulaire -->
+      <form (ngSubmit)="login()" #loginForm="ngForm" class="login-form">
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email" class="form-label">
+            <i class="fas fa-envelope"></i>
+            Email
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            [(ngModel)]="email"
+            class="form-input"
+            placeholder="exemple@mail.com"
+            required>
+          <small class="form-error" *ngIf="loginForm.submitted && !email">
+            L'email est requis
+          </small>
+        </div>
+
+        <!-- Mot de passe -->
+        <div class="form-group">
+          <label for="password" class="form-label">
+            <i class="fas fa-lock"></i>
+            Mot de passe
+          </label>
+          <input
+            type="password"
+            id="password"
+            name="password"
+            [(ngModel)]="password"
+            class="form-input"
+            placeholder="••••••••"
+            required>
+          <small class="form-error" *ngIf="loginForm.submitted && !password">
+            Le mot de passe est requis
+          </small>
+        </div>
+
+        <!-- Message d'erreur -->
+        <div *ngIf="errorMessage" class="alert alert-danger">
+          <i class="fas fa-exclamation-circle"></i>
+          {{ errorMessage }}
+        </div>
+
+        <!-- Bouton submit -->
+        <button
+          type="submit"
+          [disabled]="loginForm.invalid || isLoading"
+          class="btn-login">
+          <span *ngIf="!isLoading">Se connecter</span>
+          <span *ngIf="isLoading">
+            <i class="fas fa-spinner fa-spin"></i> Connexion en cours...
+          </span>
+        </button>
+      </form>
+
+      <!-- Footer de la card -->
+      <div class="login-footer">
+        <p>Pas encore de compte ? <a href="#/register">S'inscrire</a></p>
+        <p><a href="#/forgot-password">Mot de passe oublié ?</a></p>
+      </div>
     </div>
 
-    <div>
-      <label for="password">Mot de passe :</label>
-      <input type="password" id="password" name="password" [(ngModel)]="password" required>
-    </div>
-
-    <button type="submit" [disabled]="loginForm.invalid">Se connecter</button>
-  </form>
+    <!-- Background decoration -->
+    <div class="login-bg-decoration"></div>
+  </div>
 </div>
