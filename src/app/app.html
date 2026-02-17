@@ -1,1 +1,7 @@
-<app-navbar></app-navbar>
+<app-navbar *ngIf="isLoggedIn$ | async"></app-navbar>
+
+<div class="app-container">
+  <router-outlet></router-outlet>
+</div>
+
+<app-footer></app-footer>

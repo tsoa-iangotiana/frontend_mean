@@ -6,10 +6,10 @@ import { authGuard } from './guards/auth.guard';
 // import { roleGuard } from './guards/role.guard';
 import { Login } from './components/user/login/login';
 export const routes: Routes = [
-    {path : 'login', loadComponent: () => import('./components/user/login/login').then(m => m.Login)},
     {path : 'inscription/:role', component : Inscription},
     {path : 'articles', component : ArticleList, canActivate: [authGuard]},
-    {path : '', component: Login }
+    {path: 'login', component: Login},
+    {path : '', redirectTo: '/login', pathMatch: 'full'}
 //      {
 //     path: 'admin',
 //     loadComponent: () => import('./components/admin/admin.component')
