@@ -34,6 +34,7 @@ constructor(
 
   // login.ts - Modifiez la méthode login()
 login() {
+  console.log (this.password);
   this.userService.login({
     email: this.email,
     password: this.password

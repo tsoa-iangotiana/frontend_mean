@@ -88,25 +88,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
    * Construit la navigation en fonction du rôle utilisateur
    */
   private buildNavigation(): void {
-    const baseNav: NavItem[] = [
-      {
-        label: 'Tableau de bord',
-        route: '/',
-        icon: 'home',
-        exact: true,
-      },
-      {
-        label: 'Produits',
-        route: '/produits',
-        icon: 'shopping-bag',
-        exact: false,
-      },
-    ];
 
     switch (this.userRole) {
       case 'admin':
         this.navItems = [
-          ...baseNav,
           {
             label: 'Administration',
             icon: 'crown',
@@ -119,8 +104,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
                 exact: false,
               },
               {
-                label: 'Messages',
-                route: '/admin/messages',
+                label: 'Tickets',
+                route: '/admin/Tickets',
                 icon: 'comments',
                 exact: false,
               },
@@ -143,7 +128,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
       case 'boutique':
         this.navItems = [
-          ...baseNav,
+          {
+            label: 'Profil',
+            route: '/boutique/profil',
+            icon: 'user',
+            exact: false,
+          },
           {
             label: 'Ma Boutique',
             icon: 'store',
@@ -156,31 +146,36 @@ export class NavbarComponent implements OnInit, OnDestroy {
                 exact: false,
               },
               {
-                label: 'Commandes',
-                route: '/boutique/commandes',
-                icon: 'truck',
-                exact: false,
-              },
-              {
                 label: 'Promotions',
                 route: '/boutique/promotions',
                 icon: 'percentage',
                 exact: false,
               },
-              {
-                label: 'Statistiques',
-                route: '/boutique/stats',
-                icon: 'chart-bar',
-                exact: false,
-              },
             ],
+          },
+           {
+            label: 'Commandes',
+            route: '/boutique/commandes',
+            icon: 'shopping-cart',
+            exact: false,
+          },
+          {
+            label: 'Location',
+            route: '/boutique/location',
+            icon: 'map-marker-alt',
+            exact: false,
+          },
+          {
+            label: 'Support',
+            route: '/boutique/support',
+            icon: 'headset',
+            exact: false,
           },
         ];
         break;
 
       case 'acheteur':
         this.navItems = [
-          ...baseNav,
           {
             label: 'Mes Achats',
             icon: 'shopping-cart',
@@ -204,7 +199,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
         break;
 
       default:
-        this.navItems = baseNav;
+        this.navItems = [];
     }
   }
 
@@ -311,7 +306,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
    * Déconnexion
    */
   logout(): void {
-    // this.authService.logout();
+    this.authService.logout();
     this.openSubmenus.clear();
     this.router.navigate(['/login']);
     this.closeSidebarMobile();

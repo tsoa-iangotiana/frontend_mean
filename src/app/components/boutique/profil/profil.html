@@ -1,0 +1,201 @@
+<div class="profile-container">
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Pas de boutique -->
+  <div *ngIf="!loading && !hasBoutique && !isCreating" class="no-boutique">
+    <div class="empty-state">
+      <div class="empty-icon">🏪</div>
+      <h2>Vous n'avez pas encore de boutique</h2>
+      <p>Créez votre boutique pour commencer à vendre sur la plateforme</p>
+      <button class="btn-primary" (click)="modeCreation()">
+        Créer ma boutique
+      </button>
+    </div>
+  </div>
+
+  <!-- Formulaire de création/édition -->
+  <div *ngIf="isCreating || isEditing" class="boutique-form">
+    <h2>{{ isCreating ? 'Créer ma boutique' : 'Modifier ma boutique' }}</h2>
+    
+    <form [formGroup]="boutiqueForm" (ngSubmit)="sauvegarder()">
+      <!-- Photo de profil -->
+      <div class="form-group photo-section">
+        <div class="photo-preview" (click)="fileInput.click()">
+          <img *ngIf="photoPreview" [src]="photoPreview" alt="Photo profil">
+          <div *ngIf="!photoPreview" class="photo-placeholder">
+            <span>+</span>
+            <p>Ajouter une photo</p>
+          </div>
+        </div>
+        <input 
+          type="file" 
+          #fileInput
+          style="display: none"
+          accept="image/*"
+          (change)="onFileSelected($event)">
+      </div>
+
+      <!-- Informations de base -->
+      <div class="form-group">
+        <label for="nom">Nom de la boutique *</label>
+        <input 
+          type="text" 
+          id="nom"
+          formControlName="nom"
+          placeholder="Ex: Tech Store">
+        <div *ngIf="boutiqueForm.get('nom')?.invalid && boutiqueForm.get('nom')?.touched" class="error-message">
+          Le nom est requis
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="slogan">Slogan</label>
+        <input 
+          type="text" 
+          id="slogan"
+          formControlName="slogan"
+          placeholder="Votre slogan accrocheur">
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description</label>
+        <textarea 
+          id="description"
+          formControlName="description"
+          rows="4"
+          placeholder="Décrivez votre boutique...">
+        </textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="condition_vente">Conditions de vente</label>
+        <textarea 
+          id="condition_vente"
+          formControlName="condition_vente"
+          rows="3"
+          placeholder="Conditions générales de vente...">
+        </textarea>
+      </div>
+
+      <!-- Contacts -->
+      <div class="form-group">
+        <label>Contacts</label>
+        <div class="contacts-list">
+          <div *ngFor="let contact of contactsFormArray.controls; let i = index" class="contact-item">
+            <span>{{ contact.value }}</span>
+            <button type="button" class="btn-remove" (click)="supprimerContact(i)">×</button>
+          </div>
+        </div>
+        
+        <div class="add-contact">
+          <input 
+            type="text" 
+            [(ngModel)]="newContact"
+            [ngModelOptions]="{standalone: true}"
+            placeholder="Téléphone, email, réseau social...">
+          <button type="button" class="btn-add" (click)="ajouterContact()">Ajouter</button>
+        </div>
+      </div>
+
+      <!-- Catégories -->
+      <div class="form-group">
+        <label>Catégories</label>
+        <div class="categories-grid">
+          <div 
+            *ngFor="let cat of categoriesDisponibles" 
+            class="categorie-chip"
+            [class.selected]="isCategorieSelected(cat._id)"
+            (click)="toggleCategorie(cat._id)">
+            {{ cat.nom }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Boutons -->
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" (click)="annuler()">
+          Annuler
+        </button>
+        <button type="submit" class="btn-primary" [disabled]="loading">
+          {{ loading ? 'Sauvegarde...' : (isCreating ? 'Créer' : 'Sauvegarder') }}
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Affichage de la boutique existante -->
+  <div *ngIf="!loading && hasBoutique && !isEditing && !isCreating" class="boutique-view">
+    <div class="boutique-header">
+      <div class="boutique-photo">
+        <img *ngIf="boutique?.profil_photo" [src]="boutique?.profil_photo" alt="Photo">
+        <div *ngIf="!boutique?.profil_photo" class="photo-placeholder">
+          {{ boutique?.nom?.charAt(0) }}
+        </div>
+      </div>
+      
+      <div class="boutique-info">
+        <h1>{{ boutique?.nom }}</h1>
+        <p class="slogan" *ngIf="boutique?.slogan">"{{ boutique?.slogan }}"</p>
+        
+        <div class="badges">
+          <span class="badge" [class.active]="boutique?.active">
+            {{ boutique?.active ? 'Active' : 'En attente' }}
+          </span>
+          <span class="badge note" *ngIf="boutique?.note_moyenne">
+            ★ {{ boutique?.note_moyenne }}
+          </span>
+        </div>
+      </div>
+      
+      <button class="btn-edit" (click)="modeEdition()">
+        Modifier
+      </button>
+    </div>
+
+    <!-- Description -->
+    <div class="boutique-section" *ngIf="boutique?.description">
+      <h3>Description</h3>
+      <p>{{ boutique?.description }}</p>
+    </div>
+
+    <!-- Conditions de vente -->
+    <div class="boutique-section" *ngIf="boutique?.condition_vente">
+      <h3>Conditions de vente</h3>
+      <p>{{ boutique?.condition_vente }}</p>
+    </div>
+
+    <!-- Contacts -->
+    <div class="boutique-section" *ngIf="boutique?.contact?.length">
+      <h3>Contacts</h3>
+      <div class="contacts-list">
+        <div *ngFor="let contact of boutique?.contact" class="contact-item">
+          {{ contact }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Catégories -->
+    <div class="boutique-section" *ngIf="boutique?.categories?.length">
+      <h3>Catégories</h3>
+      <div class="categories-list">
+        <span *ngFor="let cat of boutique?.categories" class="categorie-tag">
+          {{ getCategorieName(cat._id) }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Box (info seulement) -->
+    <div class="boutique-section" *ngIf="boutique?.box">
+      <h3>Box attribué</h3>
+      <div class="box-info">
+        <p><strong>Numéro:</strong> {{ boutique?.box?.numero }}</p>
+        <p><strong>Surface:</strong> {{ boutique?.box?.surface }} m²</p>
+        <p><strong>Loyer:</strong> {{ boutique?.box?.prix_loyer | currency:'EUR' }}</p>
+      </div>
+    </div>
+  </div>
+</div>
