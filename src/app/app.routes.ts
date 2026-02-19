@@ -6,12 +6,16 @@ import { authGuard } from './guards/auth.guard';
 // import { roleGuard } from './guards/role.guard';
 import { Login } from './components/user/login/login';
 import { Profil } from './components/boutique/profil/profil';
+import { ProduitsComponent } from './components/boutique/produit/produit.component';
+import { BoutiqueSelectionneeGuard } from './guards/boutique-selectionne.guard';
+
 export const routes: Routes = [
     {path : 'inscription/:role', component : Inscription},
     {path : 'articles', component : ArticleList, canActivate: [authGuard]},
     {path: 'login', component: Login},
     {path: 'boutique/profil', component: Profil, canActivate: [authGuard]},
-    {path : '', redirectTo: '/login', pathMatch: 'full'}
+    {path : '', redirectTo: '/login', pathMatch: 'full'},
+    {path: 'boutique/produits', component: ProduitsComponent, canActivate: [authGuard]},
 //      {
 //     path: 'admin',
 //     loadComponent: () => import('./components/admin/admin.component')
