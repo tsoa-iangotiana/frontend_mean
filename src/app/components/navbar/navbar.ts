@@ -1,9 +1,11 @@
-import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, Input } from '@angular/core';
+import { Component, OnInit, OnDestroy, Inject, PLATFORM_ID, Input, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { AuthService } from '../../services/auth';
 import { Subscription } from 'rxjs';
+import { Boutique, ProfilService } from '../../services/boutique/profil/profil.service';
+import { BoutiqueContextService } from '../../services/boutique/context/boutique.context.service';
 
 interface NavItem {
   label: string;
@@ -13,22 +15,6 @@ interface NavItem {
   exact: boolean;
   badge?: number | null;
 }
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: 'admin' | 'boutique' | 'acheteur' | 'guest';
-}
-
-interface Boutique {
-  id: string;
-  nom: string;
-  categorie: string;
-  logo?: string;
-  actif: boolean;
-}
-
 
 @Component({
   selector: 'app-navbar',
@@ -65,6 +51,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthService,
     private router: Router,
+    private profilService: ProfilService,
+    private boutiqueContext: BoutiqueContextService,
+    private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(this.platformId);
@@ -84,9 +73,20 @@ export class NavbarComponent implements OnInit, OnDestroy {
         } else {
           this.boutiques = [];
           this.selectedBoutique = null;
+          this.boutiqueContext.clearBoutiqueSelectionnee();
+           this.cdr.detectChanges();
         }
       })
+    );
 
+    // S'abonner aux changements de la boutique sélectionnée
+    this.subscriptions.push(
+      this.boutiqueContext.boutiqueSelectionnee$.subscribe(boutique => {
+        this.selectedBoutique = boutique;
+        // Mettre à jour la navigation si nécessaire (ex: ajouter l'ID dans les routes)
+        this.updateNavigationWithBoutiqueId();
+         this.cdr.detectChanges();
+      })
     );
 
     // Vérifier la taille d'écran au démarrage (seulement dans le navigateur)
@@ -107,102 +107,80 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Met à jour les routes de navigation avec l'ID de la boutique sélectionnée
+   */
+  private updateNavigationWithBoutiqueId(): void {
+    // Reconstruire la navigation pour actualiser les routes
+    this.buildNavigation();
+  }
+
+  /**
    * Charge la liste des boutiques de l'utilisateur
    */
   private loadUserBoutiques(): void {
-    // Simulation - À remplacer par un vrai service
-    // this.boutiqueService.getUserBoutiques().subscribe(boutiques => {
-    //   this.boutiques = boutiques;
-    //   if (boutiques.length > 0 && !this.selectedBoutique) {
-    //     this.selectedBoutique = boutiques[0];
-    //     this.saveSelectedBoutiqueToStorage();
-    //   }
-    // });
+    const user = this.authService.getCurrentUser();
+    if (!user) return;
 
-    // Données de test
-    setTimeout(() => {
-      this.boutiques = [
-        {
-          id: '1',
-          nom: 'Ma Boutique Principale',
-          categorie: 'Vêtements',
-          actif: true
-        },
-        {
-          id: '2',
-          nom: 'Boutique Secondaire',
-          categorie: 'Accessoires',
-          actif: true
+    this.profilService.getBoutiqueByResponsable(user._id).subscribe({
+      next: (response) => {
+        const boutiquesList = response.boutique || response.boutiques || [];
+        this.boutiques = boutiquesList;
+
+        if (this.boutiques.length > 0) {
+          // Vérifier si une boutique est déjà sélectionnée dans le contexte
+          const contextBoutique = this.boutiqueContext.getBoutiqueSelectionnee();
+          
+          if (contextBoutique) {
+            // Vérifier que la boutique du contexte existe toujours dans la liste
+            const exists = this.boutiques.some(b => b._id === contextBoutique._id);
+            if (exists) {
+              this.selectedBoutique = contextBoutique;
+            } else {
+              // Si elle n'existe plus, prendre la première
+              this.selectBoutique(this.boutiques[0]);
+            }
+          } else {
+            // Pas de boutique sélectionnée, prendre la première
+            this.selectBoutique(this.boutiques[0]);
+          }
+        } else {
+          this.selectedBoutique = null;
+          this.boutiqueContext.clearBoutiqueSelectionnee();
+           this.cdr.detectChanges();
         }
-      ];
-
-      if (this.boutiques.length > 0 && !this.selectedBoutique) {
-        this.selectedBoutique = this.boutiques[0];
-        this.saveSelectedBoutiqueToStorage();
-        this.emitBoutiqueChange();
+      },
+      error: (error) => {
+        console.error('Erreur chargement boutiques:', error);
+        if (error.status === 401) {
+          this.authService.logout();
+          this.router.navigate(['/login']);
+           this.cdr.detectChanges();
+        }
       }
-    }, 500);
-  }
-
-  /**
-   * Charge la boutique sélectionnée depuis le localStorage
-   */
-  private loadSelectedBoutiqueFromStorage(): void {
-    if (!this.isBrowser) return;
-
-    const savedBoutiqueId = localStorage.getItem('selectedBoutiqueId');
-    if (savedBoutiqueId && this.boutiques.length > 0) {
-      const found = this.boutiques.find(b => b.id === savedBoutiqueId);
-      if (found) {
-        this.selectedBoutique = found;
-      }
-    }
-  }
-
-  /**
-   * Sauvegarde la boutique sélectionnée dans le localStorage
-   */
-  private saveSelectedBoutiqueToStorage(): void {
-    if (!this.isBrowser || !this.selectedBoutique) return;
-
-    localStorage.setItem('selectedBoutiqueId', this.selectedBoutique.id);
+    });
   }
 
   /**
    * Sélectionne une boutique
    */
   selectBoutique(boutique: Boutique): void {
-    if (this.selectedBoutique?.id === boutique.id) return;
+    if (this.selectedBoutique?._id === boutique._id) return;
 
     this.selectedBoutique = boutique;
-    this.saveSelectedBoutiqueToStorage();
-    this.emitBoutiqueChange();
+    
+    // Mettre à jour le contexte global
+    this.boutiqueContext.setBoutiqueSelectionnee(boutique);
 
-    // Optionnel : Recharger les données pour la nouvelle boutique
-    // this.reloadBoutiqueData();
-  }
-
-  /**
-   * Émet un événement de changement de boutique
-   */
-  private emitBoutiqueChange(): void {
-    // Émettre un événement personnalisé pour que les autres composants réagissent
-    if (this.isBrowser) {
-      const event = new CustomEvent('boutiqueChange', {
-        detail: this.selectedBoutique
+    // Rediriger vers la page de profil boutique ou recharger les données
+    if (this.router.url.includes('/boutique/')) {
+      // Option 1: Recharger la page actuelle avec la nouvelle boutique
+      const currentUrl = this.router.url;
+      this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => {
+        this.router.navigate([currentUrl]);
       });
-      window.dispatchEvent(event);
-    }
-  }
-
-  /**
-   * Recharge les données pour la boutique sélectionnée
-   */
-  private reloadBoutiqueData(): void {
-    // Rediriger vers la page appropriée avec l'ID de boutique
-    if (this.selectedBoutique && this.router.url.includes('/boutique/')) {
-      // Recharger les données du composant actuel si nécessaire
-      // Vous pouvez utiliser un service pour notifier les composants
+      
+      // Option 2: Émettre un événement pour recharger les données (si vous préférez)
+      // this.boutiqueContext.emitBoutiqueChange();
     }
   }
 
@@ -210,7 +188,6 @@ export class NavbarComponent implements OnInit, OnDestroy {
    * Construit la navigation en fonction du rôle utilisateur
    */
   private buildNavigation(): void {
-
     switch (this.userRole) {
       case 'admin':
         this.navItems = [
@@ -249,6 +226,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
         break;
 
       case 'boutique':
+        // Construction des routes avec l'ID de boutique si sélectionnée
+        const boutiqueId = this.selectedBoutique?._id;
+        
         this.navItems = [
           {
             label: 'Profil',
@@ -263,21 +243,21 @@ export class NavbarComponent implements OnInit, OnDestroy {
             children: [
               {
                 label: 'Mes Produits',
-                route: '/boutique/produits',
+                route: boutiqueId ? `/boutique/produits/${boutiqueId}` : '/boutique/produits',
                 icon: 'box',
                 exact: false,
               },
               {
                 label: 'Promotions',
-                route: '/boutique/promotions',
+                route: boutiqueId ? `/boutique/promotions/${boutiqueId}` : '/boutique/promotions',
                 icon: 'percentage',
                 exact: false,
               },
             ],
           },
-           {
+          {
             label: 'Commandes',
-            route: '/boutique/commandes',
+            route: boutiqueId ? `/boutique/commandes/${boutiqueId}` : '/boutique/commandes',
             icon: 'shopping-cart',
             exact: false,
           },
@@ -323,6 +303,19 @@ export class NavbarComponent implements OnInit, OnDestroy {
       default:
         this.navItems = [];
     }
+  }
+
+  /**
+   * Vérifie si un élément de navigation doit être désactivé
+   */
+  isNavItemDisabled(item: NavItem): boolean {
+    // Désactiver les éléments qui nécessitent une boutique sélectionnée
+    if (this.userRole === 'boutique' && !this.selectedBoutique) {
+      const boutiqueRoutes = ['produits', 'promotions', 'commandes'];
+      const itemRoute = item.route || '';
+      return boutiqueRoutes.some(route => itemRoute.includes(route));
+    }
+    return false;
   }
 
   /**
@@ -401,11 +394,12 @@ export class NavbarComponent implements OnInit, OnDestroy {
   getUserInitials(): string {
     if (!this.currentUser) return '?';
 
-    const parts = this.currentUser.username.split(' ');
+    const username = this.currentUser.username || this.currentUser.email || '';
+    const parts = username.split(' ');
     if (parts.length >= 2) {
       return (parts[0][0] + parts[1][0]).toUpperCase();
     }
-    return this.currentUser.username.substring(0, 2).toUpperCase();
+    return username.substring(0, 2).toUpperCase();
   }
 
   /**
@@ -425,10 +419,25 @@ export class NavbarComponent implements OnInit, OnDestroy {
   }
 
   /**
+   * Retourne le nom de la boutique sélectionnée
+   */
+  getSelectedBoutiqueName(): string {
+    return this.selectedBoutique?.nom || 'Aucune boutique';
+  }
+
+  /**
+   * Vérifie si une boutique est sélectionnée
+   */
+  hasSelectedBoutique(): boolean {
+    return !!this.selectedBoutique;
+  }
+
+  /**
    * Déconnexion
    */
   logout(): void {
     this.authService.logout();
+    this.boutiqueContext.clearBoutiqueSelectionnee();
     this.openSubmenus.clear();
     this.router.navigate(['/login']);
     this.closeSidebarMobile();
