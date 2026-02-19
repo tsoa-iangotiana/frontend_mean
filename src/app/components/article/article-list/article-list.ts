@@ -78,7 +78,7 @@ loadArticles() {
 
       if (err.status === 401) {
         console.log('🔒 Token invalide/expiré - Déconnexion forcée');
-        this.authService.removeToken();
+        this.authService.logout();
         this.router.navigate(['/login']);
         return;
       }

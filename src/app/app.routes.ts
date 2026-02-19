@@ -5,10 +5,12 @@ import { Inscription } from './components/user/inscription/inscription';
 import { authGuard } from './guards/auth.guard';
 // import { roleGuard } from './guards/role.guard';
 import { Login } from './components/user/login/login';
+import { Profil } from './components/boutique/profil/profil';
 export const routes: Routes = [
     {path : 'inscription/:role', component : Inscription},
     {path : 'articles', component : ArticleList, canActivate: [authGuard]},
     {path: 'login', component: Login},
+    {path: 'boutique/profil', component: Profil, canActivate: [authGuard]},
     {path : '', redirectTo: '/login', pathMatch: 'full'}
 //      {
 //     path: 'admin',
