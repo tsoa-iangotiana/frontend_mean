@@ -18,6 +18,34 @@
 
     <!-- Section droite du header -->
     <div class="header-right">
+      <!-- Sélecteur de boutique (pour utilisateurs boutique) -->
+      <div class="boutique-selector" *ngIf="userRole === 'boutique' && boutiques.length > 0" ngbDropdown container="body">
+        <button
+          class="boutique-selector-btn"
+          ngbDropdownToggle
+          type="button"
+          id="boutiqueDropdown">
+          <i class="fas fa-store"></i>
+          <span class="boutique-name">{{ selectedBoutique?.nom || 'Sélectionner boutique' }}</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="dropdown-menu" ngbDropdownMenu aria-labelledby="boutiqueDropdown">
+          <h6 class="dropdown-header">Mes boutiques</h6>
+          <a
+            *ngFor="let boutique of boutiques"
+            class="dropdown-item"
+            [class.active]="selectedBoutique?.id === boutique.id"
+            (click)="selectBoutique(boutique)"
+            href="javascript:void(0)">
+            <i class="fas fa-store-alt"></i>
+            <div class="boutique-item-info">
+              <span class="boutique-item-nom">{{ boutique.nom }}</span>
+              <small class="boutique-item-categorie">{{ boutique.categorie }}</small>
+            </div>
+            <i *ngIf="selectedBoutique?.id === boutique.id" class="fas fa-check text-success ms-auto"></i>
+          </a>
+        </div>
+      </div>
       <!-- Panier (pour acheteurs) -->
       <a *ngIf="userRole === 'acheteur'" routerLink="/panier" class="nav-link">
         <i class="fas fa-shopping-cart" style="font-size: 20px; color: var(--primary-color);"></i>

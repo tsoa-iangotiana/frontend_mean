@@ -21,6 +21,15 @@ interface User {
   role: 'admin' | 'boutique' | 'acheteur' | 'guest';
 }
 
+interface Boutique {
+  id: string;
+  nom: string;
+  categorie: string;
+  logo?: string;
+  actif: boolean;
+}
+
+
 @Component({
   selector: 'app-navbar',
   standalone: true,
@@ -40,6 +49,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
   // ===== ÉTATS UTILISATEUR =====
   currentUser: any = null;
   userRole: string = 'guest';
+
+  // ===== ÉTATS BOUTIQUE =====
+  boutiques: Boutique[] = [];
+  selectedBoutique: Boutique | null = null;
 
   // ===== NAVIGATION =====
   navItems: NavItem[] = [];
@@ -64,7 +77,16 @@ export class NavbarComponent implements OnInit, OnDestroy {
         this.currentUser = user;
         this.userRole = user?.role || '';
         this.buildNavigation();
+
+        // Charger les boutiques si l'utilisateur est de type boutique
+        if (this.userRole === 'boutique') {
+          this.loadUserBoutiques();
+        } else {
+          this.boutiques = [];
+          this.selectedBoutique = null;
+        }
       })
+
     );
 
     // Vérifier la taille d'écran au démarrage (seulement dans le navigateur)
@@ -81,6 +103,106 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
     if (this.isBrowser) {
       window.removeEventListener('resize', () => this.checkScreenSize());
+    }
+  }
+
+  /**
+   * Charge la liste des boutiques de l'utilisateur
+   */
+  private loadUserBoutiques(): void {
+    // Simulation - À remplacer par un vrai service
+    // this.boutiqueService.getUserBoutiques().subscribe(boutiques => {
+    //   this.boutiques = boutiques;
+    //   if (boutiques.length > 0 && !this.selectedBoutique) {
+    //     this.selectedBoutique = boutiques[0];
+    //     this.saveSelectedBoutiqueToStorage();
+    //   }
+    // });
+
+    // Données de test
+    setTimeout(() => {
+      this.boutiques = [
+        {
+          id: '1',
+          nom: 'Ma Boutique Principale',
+          categorie: 'Vêtements',
+          actif: true
+        },
+        {
+          id: '2',
+          nom: 'Boutique Secondaire',
+          categorie: 'Accessoires',
+          actif: true
+        }
+      ];
+
+      if (this.boutiques.length > 0 && !this.selectedBoutique) {
+        this.selectedBoutique = this.boutiques[0];
+        this.saveSelectedBoutiqueToStorage();
+        this.emitBoutiqueChange();
+      }
+    }, 500);
+  }
+
+  /**
+   * Charge la boutique sélectionnée depuis le localStorage
+   */
+  private loadSelectedBoutiqueFromStorage(): void {
+    if (!this.isBrowser) return;
+
+    const savedBoutiqueId = localStorage.getItem('selectedBoutiqueId');
+    if (savedBoutiqueId && this.boutiques.length > 0) {
+      const found = this.boutiques.find(b => b.id === savedBoutiqueId);
+      if (found) {
+        this.selectedBoutique = found;
+      }
+    }
+  }
+
+  /**
+   * Sauvegarde la boutique sélectionnée dans le localStorage
+   */
+  private saveSelectedBoutiqueToStorage(): void {
+    if (!this.isBrowser || !this.selectedBoutique) return;
+
+    localStorage.setItem('selectedBoutiqueId', this.selectedBoutique.id);
+  }
+
+  /**
+   * Sélectionne une boutique
+   */
+  selectBoutique(boutique: Boutique): void {
+    if (this.selectedBoutique?.id === boutique.id) return;
+
+    this.selectedBoutique = boutique;
+    this.saveSelectedBoutiqueToStorage();
+    this.emitBoutiqueChange();
+
+    // Optionnel : Recharger les données pour la nouvelle boutique
+    // this.reloadBoutiqueData();
+  }
+
+  /**
+   * Émet un événement de changement de boutique
+   */
+  private emitBoutiqueChange(): void {
+    // Émettre un événement personnalisé pour que les autres composants réagissent
+    if (this.isBrowser) {
+      const event = new CustomEvent('boutiqueChange', {
+        detail: this.selectedBoutique
+      });
+      window.dispatchEvent(event);
+    }
+  }
+
+  /**
+   * Recharge les données pour la boutique sélectionnée
+   */
+  private reloadBoutiqueData(): void {
+    // Rediriger vers la page appropriée avec l'ID de boutique
+    if (this.selectedBoutique && this.router.url.includes('/boutique/')) {
+      // Recharger les données du composant actuel si nécessaire
+      // Vous pouvez utiliser un service pour notifier les composants
     }
   }
 
