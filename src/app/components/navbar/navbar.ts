@@ -243,7 +243,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
             children: [
               {
                 label: 'Mes Produits',
-                route: boutiqueId ? `/boutique/produits/${boutiqueId}` : '/boutique/produits',
+                route: '/boutique/produits',
                 icon: 'box',
                 exact: false,
               },
