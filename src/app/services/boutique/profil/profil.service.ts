@@ -40,7 +40,7 @@ export interface Box {
 export class ProfilService {
   private apiUrl = `${environment.apiUrl}/boutique`;
   private base = `${environment.apiUrl}`;
-   
+
   constructor(private http: HttpClient) { }
 
   // Vérifier si le responsable a une boutique
@@ -54,9 +54,10 @@ export class ProfilService {
   }
 
   // Créer une nouvelle boutique
-  createBoutique(boutiqueData: any): Observable<any> {
-    return this.http.post(`${this.apiUrl}/insert`, boutiqueData);
+  createBoutique(data: FormData): Observable<any> {
+    return this.http.post(`${this.apiUrl}/insert`, data);
   }
+
 
   // Mettre à jour la boutique
   updateBoutique(id: string, boutiqueData: any): Observable<any> {

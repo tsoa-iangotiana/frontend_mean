@@ -1,0 +1,46 @@
+<div class="role-page">
+  <div class="role-bg-decoration"></div>
+
+  <div class="role-card">
+
+    <div class="role-header">
+      <div class="role-logo">🏬</div>
+      <h1>Créer un compte</h1>
+      <p>Choisissez votre profil pour commencer</p>
+    </div>
+
+    <div class="cards">
+
+      <div class="card card--admin" [class.selected]="selectedRole === 'admin'" (click)="select('admin')">
+        <div class="card-check">✓</div>
+        <div class="card-icon">🛡️</div>
+        <div class="card-title">Admin</div>
+        <p class="card-desc">Gérez la plateforme et supervisez les activités.</p>
+      </div>
+
+      <div class="card card--boutique" [class.selected]="selectedRole === 'boutique'" (click)="select('boutique')">
+        <div class="card-check">✓</div>
+        <div class="card-icon">🏪</div>
+        <div class="card-title">Boutique</div>
+        <p class="card-desc">Gérez vos produits et suivez vos commandes.</p>
+      </div>
+
+      <div class="card card--acheteur" [class.selected]="selectedRole === 'acheteur'" (click)="select('acheteur')">
+        <div class="card-check">✓</div>
+        <div class="card-icon">🛍️</div>
+        <div class="card-title">Acheteur</div>
+        <p class="card-desc">Découvrez les boutiques et faites vos achats.</p>
+      </div>
+
+    </div>
+
+    <button class="btn-continue" [class.active]="selectedRole" [disabled]="!selectedRole" (click)="continuer()">
+      Continuer <span *ngIf="selectedRole">en tant que {{ selectedRole }}</span> →
+    </button>
+
+    <div class="role-footer">
+      <p>Déjà un compte ? <a routerLink="/login">Se connecter</a></p>
+    </div>
+
+  </div>
+</div>
