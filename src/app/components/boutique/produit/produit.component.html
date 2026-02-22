@@ -1,19 +1,33 @@
 <!-- produits.component.html -->
 <div class="produits-container">
-  <!-- Header avec titre et bouton ajout -->
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>
-      <i class="fas fa-box me-2"></i>
-      Gestion des Produits
-      <small class="text-muted fs-6 ms-2" *ngIf="totalItems > 0">
-        ({{ totalItems }} produit(s))
-      </small>
-    </h2>
+  <!-- Header avec titre et boutons -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+  <h2 class="mb-2 mb-sm-0">
+    <i class="fas fa-box me-2"></i>
+    Gestions de produits
+    <small class="text-muted fs-6 ms-2" *ngIf="totalItems > 0">
+      ({{ totalItems }} produit(s))
+    </small>
+  </h2>
+  
+  <!-- Boutons avec espacement réduit -->
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-info" (click)="openPromotionListModal()">
+      <i class="fas fa-tags me-2"></i>
+      Promotions
+    </button>
+    
+    <button class="btn btn-outline-success" (click)="openCreatePromotionModal()">
+      <i class="fas fa-plus-circle me-2"></i>
+      Nouvelle promotion
+    </button>
+    
     <button class="btn btn-primary" (click)="openCreateModal()">
       <i class="fas fa-plus me-2"></i>
       Nouveau produit
     </button>
   </div>
+</div>
 
   <!-- Filtres et recherche -->
   <div class="filters-card card mb-4">
@@ -44,19 +58,33 @@
           </select>
         </div>
 
-        <!-- Filtre actif/inactif -->
-       <div class="col-md-3 d-flex align-items-end">
-        <div class="form-check form-switch">
-            <input
-            class="form-check-input"
-            type="checkbox"
-            id="actifFilter"
-            [ngModel]="showActifOnly"
-            (ngModelChange)="onActifFilterChange($event)">  <!-- ← (ngModelChange) -->
-            <label class="form-check-label" for="actifFilter">
-            Produits actifs uniquement
-            </label>
-        </div>
+        <!-- Filtres switches -->
+        <div class="col-md-3">
+          <div class="d-flex flex-column">
+            <div class="form-check form-switch mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="actifFilter"
+                [ngModel]="showActifOnly"
+                (ngModelChange)="onActifFilterChange($event)">
+              <label class="form-check-label" for="actifFilter">
+                Produits actifs uniquement
+              </label>
+            </div>
+            <div class="form-check form-switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="promoFilter"
+                [ngModel]="showPromoOnly"
+                (ngModelChange)="onPromoFilterChange($event)">
+              <label class="form-check-label" for="promoFilter">
+                <i class="fas fa-tags text-info me-1"></i>
+                En promotion uniquement
+              </label>
+            </div>
+          </div>
         </div>
 
         <!-- Bouton reset -->
@@ -83,16 +111,29 @@
     <div class="row g-4">
       <div class="col-xl-3 col-lg-4 col-md-6" *ngFor="let produit of produits">
         <div class="card produit-card h-100">
-          <!-- Image -->
-          <div class="produit-image">
+          <!-- Image et badges -->
+          <div class="produit-image position-relative">
             <img 
-              [src]="produit.images?.[0] || 'assets/images/default-product.png'" 
+              [src]="" 
               [alt]="produit.nom"
               class="card-img-top">
-            <span class="badge stock-badge" [ngClass]="'bg-' + getStockStatus(produit).class">
+            
+            <!-- Badge promotion -->
+            <span class="badge bg-danger position-absolute top-22 start-0 m-2" 
+                  *ngIf="getProduitPromotionReduction(produit._id) as reduction">
+              <i class="fas fa-tag me-1"></i>
+              -{{ reduction }}%
+            </span>
+
+            <!-- Badge stock -->
+            <span class="badge stock-badge position-absolute top-0 end-0 m-2" 
+                  [ngClass]="'bg-' + getStockStatus(produit).class">
               {{ getStockStatus(produit).text }}
             </span>
-            <span class="badge status-badge" [ngClass]="produit.actif ? 'bg-success' : 'bg-secondary'">
+
+            <!-- Badge statut -->
+            <span class="badge status-badge position-absolute bottom-0 end-0 m-2" 
+                  [ngClass]="produit.actif ? 'bg-success' : 'bg-secondary'">
               {{ produit.actif ? 'Actif' : 'Inactif' }}
             </span>
           </div>
@@ -107,7 +148,18 @@
             <div class="produit-details mt-3">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="fw-bold">Prix:</span>
-                <span class="text-primary fs-5">{{ formatPrix(produit.prix) }}</span>
+                <div class="text-end">
+                  <span *ngIf="getProduitPromotionReduction(produit._id) as reduction" 
+                        class="text-decoration-line-through text-muted me-2 small">
+                    {{ formatPrix(produit.prix) }}
+                  </span>
+                  <span class="text-primary fs-5" 
+                        [ngClass]="{'text-danger': getProduitPromotionReduction(produit._id)}">
+                    {{ formatPrix(getProduitPromotionReduction(produit._id) ? 
+                        (produit.prix * (1 - getProduitPromotionReduction(produit._id)! / 100)) : 
+                        produit.prix) }}
+                  </span>
+                </div>
               </div>
               <div class="d-flex justify-content-between align-items-center">
                 <span class="fw-bold">Stock:</span>
@@ -123,6 +175,19 @@
               <i class="fas fa-star text-warning"></i>
               <span class="ms-1">{{ produit.note_moyenne.toFixed(1) }}/5</span>
             </div>
+
+            <!-- Info promotion -->
+            <div class="promotion-info mt-2 small" *ngIf="getProduitPromotion(produit._id) as promotion">
+              <div class="alert alert-info py-1 px-2 mb-0">
+                <i class="fas fa-tags me-1"></i>
+                <span *ngIf="promotion.date_fin">
+                  Promo jusqu'au {{ formatDate(promotion.date_fin) }}
+                </span>
+                <span *ngIf="!promotion.date_fin">
+                  Promo permanente
+                </span>
+              </div>
+            </div>
           </div>
 
           <!-- Actions -->
@@ -133,6 +198,10 @@
               </button>
               <button class="btn btn-sm btn-outline-success" (click)="openStockModal(produit)">
                 <i class="fas fa-cubes"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-info" (click)="openEditPromotionModal(getProduitPromotion(produit._id)!)"
+                      *ngIf="getProduitPromotion(produit._id) as promotion">
+                <i class="fas fa-tags"></i>
               </button>
               <button class="btn btn-sm btn-outline-danger" (click)="confirmDelete(produit)">
                 <i class="fas fa-trash"></i>
@@ -285,10 +354,15 @@
               (change)="onImagesSelected($event)"
               id="imageInput"
               style="display: none;">
-            <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('imageInput').click()">
+            <!-- Solution qui fonctionne immédiatement : -->
+          <!-- <button type="button" class="btn btn-outline-primary" (click)="$any(document).getElementById('imageInput')?.click()">
+            <i class="fas fa-cloud-upload-alt me-2"></i>
+            Ajouter des images
+          </button> -->
+             <!-- Solution plus "Angular" mais qui nécessite un peu de code supplémentaire : -->
+           <label for="imageInput" class="btn btn-outline-primary mb-0">
               <i class="fas fa-cloud-upload-alt me-2"></i>
-              Ajouter des images
-            </button>
+              Ajouter des images  </label>   
             <small class="text-muted d-block mt-1">
               Max 5 images (JPEG, PNG, GIF - 5MB max)
             </small>
@@ -325,6 +399,7 @@
     </button>
   </div>
 </ng-template>
+
 
 <!-- Modal Stock -->
 <ng-template #stockModal let-modal>
@@ -398,4 +473,88 @@
     <p class="text-muted small">
       Cette action est irréversible et supprimera définitivement le produit.
     </p>
-</div>
+    <div class="d-flex justify-content-end">
+      <button type="button" class="btn btn-secondary me-2" (click)="modal.dismiss()">
+        Annuler
+      </button>
+      <button type="button" class="btn btn-danger" (click)="deleteProduit()">
+        <i class="fas fa-trash me-2"></i>
+        Supprimer
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Modal Liste des promotions -->
+<ng-template #promotionListModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="fas fa-tags me-2"></i>
+      Gestion des promotions
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="mb-3">
+      <button class="btn btn-sm btn-success" (click)="openCreatePromotionModal(); modal.dismiss()">
+        <i class="fas fa-plus me-1"></i>
+        Nouvelle promotion
+      </button>
+    </div>
+
+    <div class="list-group" *ngIf="promotions.length > 0">
+      <div class="list-group-item" *ngFor="let promotion of promotions">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="mb-1">
+              <span class="badge me-2" [ngClass]="getPromotionBadgeClass(promotion)">
+                {{ getPromotionStatus(promotion) }}
+              </span>
+              <span class="text-danger">-{{ promotion.reduction }}%</span>
+            </h6>
+            <p class="mb-1 small">
+              <strong>{{ promotion.produits?.length || 0 }}</strong> produit(s) concerné(s)
+            </p>
+            <p class="mb-0 small text-muted">
+              <span *ngIf="promotion.date_debut">Du {{ formatDate(promotion.date_debut) }}</span>
+              <span *ngIf="promotion.date_fin"> au {{ formatDate(promotion.date_fin) }}</span>
+              <span *ngIf="!promotion.date_debut && !promotion.date_fin">Permanente</span>
+            </p>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-sm btn-outline-primary" 
+                    (click)="openEditPromotionModal(promotion); modal.dismiss()"
+                    title="Modifier la promotion">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-info" 
+                    (click)="openManagePromotionModal(promotion); modal.dismiss()"
+                    title="Gérer les produits">
+              <i class="fas fa-boxes"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" 
+                    (click)="deletePromotion(promotion, $event)"
+                    title="Supprimer la promotion">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center py-4" *ngIf="promotions.length === 0">
+      <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+      <p>Aucune promotion pour le moment</p>
+      <button class="btn btn-sm btn-primary" (click)="openCreatePromotionModal(); modal.dismiss()">
+        Créer votre première promotion
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+      Fermer
+    </button>
+  </div>
+</ng-template>
