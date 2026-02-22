@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { ArticleList } from './components/article/article-list/article-list';
 import { Home } from './components/home/home';
 import { Inscription } from './components/user/inscription/inscription';
+import { ChoixInscription } from './components/user/choix-inscription/ChoixInscription';
 import { authGuard } from './guards/auth.guard';
 // import { roleGuard } from './guards/role.guard';
 import { Login } from './components/user/login/login';
@@ -13,6 +14,7 @@ export const routes: Routes = [
     {path : 'inscription/:role', component : Inscription},
     {path : 'articles', component : ArticleList, canActivate: [authGuard]},
     {path: 'login', component: Login},
+    {path: 'inscription', component: ChoixInscription},
     {path: 'boutique/profil', component: Profil, canActivate: [authGuard]},
     {path : '', redirectTo: '/login', pathMatch: 'full'},
     {path: 'boutique/produits', component: ProduitsComponent, canActivate: [authGuard]},

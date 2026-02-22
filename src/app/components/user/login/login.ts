@@ -73,4 +73,8 @@ login() {
     }
   });
 }
+goToRegister(): void {
+  this.router.navigate(['/inscription']);
+}
+
 }
