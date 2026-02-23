@@ -423,7 +423,7 @@ selectionnerBoutique(boutique: Boutique | null): void {
     if (this.isCreating) {
       this.creerBoutique();
     } else if (this.isEditing && this.boutiqueSelectionnee) {
-      this.mettreAJourBoutique(boutiqueData);
+      this.mettreAJourBoutique();
     }
   }
 
@@ -516,41 +516,108 @@ selectionnerBoutique(boutique: Boutique | null): void {
   }
 
   // Mettre à jour la boutique
-  mettreAJourBoutique(boutiqueData: any): void {
-    if (!this.boutiqueSelectionnee || !this.boutiqueSelectionnee._id) return;
+  mettreAJourBoutique(): void {
+    if (!this.boutiqueSelectionnee?._id) return;
 
     this.loading = true;
-    console.log('🔄 Mise à jour boutique...');
 
-    // Upload photo d'abord si nouvelle photo
+    const formValue = this.boutiqueForm.value;
+    const formData = new FormData();
+
+    formData.append('nom', formValue.nom);
+    formData.append('slogan', formValue.slogan || '');
+    formData.append('description', formValue.description || '');
+    formData.append('condition_vente', formValue.condition_vente || '');
+
+    formValue.contacts.forEach((c: string) => {
+      formData.append('contact', c);
+    });
+
+    formValue.categories.forEach((c: string) => {
+      formData.append('categories', c);
+    });
+
     if (this.selectedFile) {
-      console.log('📤 Upload nouvelle photo...');
-
-      this.profilService.uploadPhoto(this.selectedFile).subscribe({
-        next: (uploadResponse) => {
-          console.log('✅ Upload photo réussi:', uploadResponse);
-          boutiqueData.profil_photo = uploadResponse.filePath;
-          this.envoyerMiseAJourBoutique(boutiqueData);
-        },
-        error: (error) => {
-          console.error('❌ Erreur upload photo:', error);
-
-          if (error.status === 401) {
-            console.log('🔒 Token invalide/expiré - Déconnexion forcée');
-            this.authService.logout();
-            this.router.navigate(['/login']);
-            return;
-          }
-
-          // Garder l'ancienne photo
-          console.log('⚠️ Mise à jour sans changer la photo');
-          this.envoyerMiseAJourBoutique(boutiqueData);
-        }
-      });
-    } else {
-      this.envoyerMiseAJourBoutique(boutiqueData);
+      formData.append('photo', this.selectedFile);
     }
+
+    this.profilService.updateBoutique(
+      this.boutiqueSelectionnee._id,
+      formData
+    ).subscribe({
+      next: (response) => {
+        const index = this.mesBoutiques.findIndex(
+          b => b._id === this.boutiqueSelectionnee!._id
+        );
+
+        if (index !== -1) {
+          this.mesBoutiques[index] = response.boutique;
+        }
+
+        this.boutiqueSelectionnee = response.boutique;
+        this.isEditing = false;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error(error);
+        this.loading = false;
+      }
+    });
   }
+
+
+// mettreAJourBoutique(): void {
+//   if (!this.boutiqueSelectionnee?._id) return;
+
+//   this.loading = true;
+
+//   const formValue = this.boutiqueForm.value;
+//   const formData = new FormData();
+
+//   formData.append('nom', formValue.nom);
+//   formData.append('slogan', formValue.slogan || '');
+//   formData.append('description', formValue.description || '');
+//   formData.append('condition_vente', formValue.condition_vente || '');
+
+//   formValue.contacts.forEach((c: string) => {
+//     formData.append('contact', c);
+//   });
+
+//   formValue.categories.forEach((c: string) => {
+//     formData.append('categories', c);
+//   });
+
+//   if (this.selectedFile) {
+//     formData.append('photo', this.selectedFile);
+//   }
+
+//   this.profilService.updateBoutique(
+//     this.boutiqueSelectionnee._id,
+//     formData
+//   )
+//   .pipe(finalize(() => this.loading = false))
+//   .subscribe({
+//     next: (response) => {
+//       const index = this.mesBoutiques.findIndex(
+//         b => b._id === this.boutiqueSelectionnee!._id
+//       );
+
+//       if (index !== -1) {
+//         this.mesBoutiques[index] = response.boutique;
+//       }
+
+//       this.boutiqueSelectionnee = response.boutique;
+//       this.isEditing = false;
+
+//     },
+//     error: (error) => {
+//       console.error(error);
+//     }
+//   });
+// }
+
+
 
   private envoyerMiseAJourBoutique(boutiqueData: any): void {
     if (!this.boutiqueSelectionnee || !this.boutiqueSelectionnee._id) return;
