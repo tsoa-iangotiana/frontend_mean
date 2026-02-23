@@ -31,7 +31,10 @@
             ],
             "outputPath": "dist/frontend_mean",
             "index": "src/index.html",
-            "baseHref": "/"
+            "baseHref": "/",
+            "polyfills": [
+              "@angular/localize/init"
+            ]
           },
           "configurations": {
             "production": {
