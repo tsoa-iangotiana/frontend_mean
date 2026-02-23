@@ -71,7 +71,10 @@
 
       <!-- Footer de la card -->
       <div class="login-footer">
-        <p>Pas encore de compte ? <a href="#/register">S'inscrire</a></p>
+        <p>Pas encore de compte ? <a (click)="goToRegister()" style="cursor: pointer;">
+            S'inscrire
+          </a>
+        </p>
         <p><a href="#/forgot-password">Mot de passe oublié ?</a></p>
       </div>
     </div>

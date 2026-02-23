@@ -35,7 +35,7 @@ export class AuthInterceptor implements HttpInterceptor {
         if (error.status === 401) {
           console.warn("🔐 401 détecté → déconnexion");
 
-          this.authService.removeToken(); // supprime token
+          this.authService.logout(); // supprime token
           this.router.navigate(['/login']);
         }
 

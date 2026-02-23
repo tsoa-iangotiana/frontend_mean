@@ -56,7 +56,7 @@ export class AuthService {
     return null;
   }
 
-  removeToken(): void {
+  logout(): void {
     this.token = null;
     if (this.isBrowser()) {
       localStorage.removeItem(this.TOKEN_KEY);

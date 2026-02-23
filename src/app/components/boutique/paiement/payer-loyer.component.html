@@ -1,0 +1,176 @@
+<div class="min-h-screen bg-gray-100 py-8">
+  <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- En-tête -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">Paiement du loyer</h1>
+      <p class="mt-2 text-sm text-gray-600">
+        Effectuez le paiement de votre loyer en toute sécurité
+      </p>
+    </div>
+
+    <!-- Loader -->
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
+      <p class="mt-2 text-gray-600">Chargement de votre situation...</p>
+    </div>
+
+    <!-- Contenu principal -->
+    <div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      
+      <!-- Colonne gauche : Résumé de la situation -->
+      <div class="md:col-span-1">
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="px-6 py-4 bg-indigo-600">
+            <h2 class="text-lg font-semibold text-white">Ma situation</h2>
+          </div>
+          
+          <div class="p-6 space-y-4">
+            <!-- Boutique et Box -->
+            <div>
+              <p class="text-sm text-gray-500">Boutique</p>
+              <p class="text-lg font-semibold">{{ situation?.boutique }}</p>
+            </div>
+            
+            <div>
+              <p class="text-sm text-gray-500">Box</p>
+              <p class="text-lg font-semibold">{{ situation?.box }}</p>
+            </div>
+            
+            <!-- Loyer mensuel -->
+            <div>
+              <p class="text-sm text-gray-500">Loyer mensuel</p>
+              <p class="text-2xl font-bold text-indigo-600">
+                {{ formatMontant(situation?.loyer_mensuel || 0) }}
+              </p>
+            </div>
+            
+            <!-- Statut -->
+            <div>
+              <p class="text-sm text-gray-500">Statut</p>
+              <span [class]="'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ' + getStatutClass()">
+                {{ getStatutLibelle() }}
+              </span>
+            </div>
+            
+            <!-- Prochaine échéance -->
+            <div *ngIf="situation?.situation?.prochaine_echeance">
+              <p class="text-sm text-gray-500">Prochaine échéance</p>
+              <p class="text-base font-medium">
+                 {{ formatDate(situation?.situation?.prochaine_echeance ?? null) }}
+              </p>
+              <p *ngIf="situation?.situation!.jours_restants > 0" class="text-sm text-green-600">
+                {{ situation?.situation?.jours_restants }} jours restants
+              </p>
+            </div>
+            
+            <!-- Dernier paiement -->
+            <div *ngIf="situation?.situation?.dernier_paiement">
+              <p class="text-sm text-gray-500">Dernier paiement</p>
+              <p class="text-base">{{ formatDate(situation?.situation?.dernier_paiement) }}</p>
+              <p class="text-sm text-gray-600">
+                {{ formatMontant(situation?.situation?.montant_paye || 0) }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Colonne droite : Formulaire de paiement -->
+      <div class="md:col-span-2">
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="px-6 py-4 bg-indigo-600">
+            <h2 class="text-lg font-semibold text-white">Effectuer un paiement</h2>
+          </div>
+          
+          <form [formGroup]="paiementForm" (ngSubmit)="onSubmit()" class="p-6 space-y-6">
+            
+            <!-- Période -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Période de paiement <span class="text-red-500">*</span>
+              </label>
+              <select
+                formControlName="periode"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                [class.border-red-500]="paiementForm.get('periode')?.invalid && paiementForm.get('periode')?.touched"
+              >
+                <option *ngFor="let option of periodeOptions" [value]="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+              <p *ngIf="paiementForm.get('periode')?.invalid && paiementForm.get('periode')?.touched" 
+                 class="mt-1 text-sm text-red-500">
+                La période est requise
+              </p>
+            </div>
+
+            <!-- Montant -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Montant à payer <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <input
+                  type="number"
+                  formControlName="montant"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  [class.border-red-500]="paiementForm.get('montant')?.invalid && paiementForm.get('montant')?.touched"
+                  placeholder="Saisissez le montant"
+                />
+                <span class="absolute right-3 top-2 text-gray-500">F CFA</span>
+              </div>
+              <p *ngIf="paiementForm.get('montant')?.invalid && paiementForm.get('montant')?.touched" 
+                 class="mt-1 text-sm text-red-500">
+                Le montant est requis
+              </p>
+              <p class="mt-1 text-sm text-gray-500">
+                Montant suggéré pour cette période : {{ formatMontant(paiementForm.get('montant')?.value) }}
+              </p>
+            </div>
+
+            <!-- Résumé du paiement -->
+            <div class="bg-gray-50 p-4 rounded-lg">
+              <h3 class="text-sm font-medium text-gray-700 mb-2">Résumé du paiement</h3>
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600">Période choisie :</span>
+                  <span class="font-medium">{{ getPeriodeLibelle(paiementForm.get('periode')?.value) }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="text-gray-600">Montant :</span>
+                  <span class="font-medium">{{ formatMontant(paiementForm.get('montant')?.value) }}</span>
+                </div>
+                <div class="border-t pt-2 mt-2">
+                  <div class="flex justify-between text-base font-bold">
+                    <span>Total à payer :</span>
+                    <span class="text-indigo-600">{{ formatMontant(paiementForm.get('montant')?.value) }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="flex justify-end space-x-3 pt-4">
+              <button
+                type="button"
+                (click)="router.navigate(['/boutique/loyer/historique'])"
+                class="px-6 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                [disabled]="paiementForm.invalid || isSubmitting"
+                class="px-6 py-2 bg-indigo-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span *ngIf="isSubmitting" class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></span>
+                {{ isSubmitting ? 'Traitement...' : 'Payer le loyer' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

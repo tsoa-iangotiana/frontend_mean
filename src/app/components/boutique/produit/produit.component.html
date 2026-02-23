@@ -1,0 +1,560 @@
+<!-- produits.component.html -->
+<div class="produits-container">
+  <!-- Header avec titre et boutons -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+  <h2 class="mb-2 mb-sm-0">
+    <i class="fas fa-box me-2"></i>
+    Gestions de produits
+    <small class="text-muted fs-6 ms-2" *ngIf="totalItems > 0">
+      ({{ totalItems }} produit(s))
+    </small>
+  </h2>
+  
+  <!-- Boutons avec espacement réduit -->
+  <div class="d-flex gap-2">
+    <button class="btn btn-outline-info" (click)="openPromotionListModal()">
+      <i class="fas fa-tags me-2"></i>
+      Promotions
+    </button>
+    
+    <button class="btn btn-outline-success" (click)="openCreatePromotionModal()">
+      <i class="fas fa-plus-circle me-2"></i>
+      Nouvelle promotion
+    </button>
+    
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <i class="fas fa-plus me-2"></i>
+      Nouveau produit
+    </button>
+  </div>
+</div>
+
+  <!-- Filtres et recherche -->
+  <div class="filters-card card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <!-- Recherche -->
+        <div class="col-md-4">
+          <label class="form-label">Recherche</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Nom du produit..."
+              [ngModel]="searchTerm"
+              (ngModelChange)="onSearchChange($event)">
+          </div>
+        </div>
+
+        <!-- Filtre catégorie -->
+        <div class="col-md-3">
+          <label class="form-label">Catégorie</label>
+          <select class="form-select" [(ngModel)]="selectedCategorie" (change)="filterByCategorie(selectedCategorie)">
+            <option value="">Toutes les catégories</option>
+            <option *ngFor="let cat of categories" [value]="cat._id">
+              {{ cat.nom }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtres switches -->
+        <div class="col-md-3">
+          <div class="d-flex flex-column">
+            <div class="form-check form-switch mb-2">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="actifFilter"
+                [ngModel]="showActifOnly"
+                (ngModelChange)="onActifFilterChange($event)">
+              <label class="form-check-label" for="actifFilter">
+                Produits actifs uniquement
+              </label>
+            </div>
+            <div class="form-check form-switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="promoFilter"
+                [ngModel]="showPromoOnly"
+                (ngModelChange)="onPromoFilterChange($event)">
+              <label class="form-check-label" for="promoFilter">
+                <i class="fas fa-tags text-info me-1"></i>
+                En promotion uniquement
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bouton reset -->
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-outline-secondary w-100" (click)="resetFilters()">
+            <i class="fas fa-undo me-2"></i>
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading indicator -->
+  <div class="text-center my-5" *ngIf="loading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-2">Chargement des produits...</p>
+  </div>
+
+  <!-- Liste des produits -->
+  <div class="produits-grid" *ngIf="!loading">
+    <div class="row g-4">
+      <div class="col-xl-3 col-lg-4 col-md-6" *ngFor="let produit of produits">
+        <div class="card produit-card h-100">
+          <!-- Image et badges -->
+          <div class="produit-image position-relative">
+            <img 
+              [src]="" 
+              [alt]="produit.nom"
+              class="card-img-top">
+            
+            <!-- Badge promotion -->
+            <span class="badge bg-danger position-absolute top-22 start-0 m-2" 
+                  *ngIf="getProduitPromotionReduction(produit._id) as reduction">
+              <i class="fas fa-tag me-1"></i>
+              -{{ reduction }}%
+            </span>
+
+            <!-- Badge stock -->
+            <span class="badge stock-badge position-absolute top-0 end-0 m-2" 
+                  [ngClass]="'bg-' + getStockStatus(produit).class">
+              {{ getStockStatus(produit).text }}
+            </span>
+
+            <!-- Badge statut -->
+            <span class="badge status-badge position-absolute bottom-0 end-0 m-2" 
+                  [ngClass]="produit.actif ? 'bg-success' : 'bg-secondary'">
+              {{ produit.actif ? 'Actif' : 'Inactif' }}
+            </span>
+          </div>
+
+          <!-- Infos produit -->
+          <div class="card-body">
+            <h5 class="card-title">{{ produit.nom }}</h5>
+            <p class="card-text text-muted small">
+              {{ getCategorieName(produit) }}
+            </p>
+            
+            <div class="produit-details mt-3">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-bold">Prix:</span>
+                <div class="text-end">
+                  <span *ngIf="getProduitPromotionReduction(produit._id) as reduction" 
+                        class="text-decoration-line-through text-muted me-2 small">
+                    {{ formatPrix(produit.prix) }}
+                  </span>
+                  <span class="text-primary fs-5" 
+                        [ngClass]="{'text-danger': getProduitPromotionReduction(produit._id)}">
+                    {{ formatPrix(getProduitPromotionReduction(produit._id) ? 
+                        (produit.prix * (1 - getProduitPromotionReduction(produit._id)! / 100)) : 
+                        produit.prix) }}
+                  </span>
+                </div>
+              </div>
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-bold">Stock:</span>
+                <span>
+                  {{ produit.stock }} 
+                  <small class="text-muted">{{ produit.unite }}</small>
+                </span>
+              </div>
+            </div>
+
+            <!-- Note moyenne -->
+            <div class="produit-rating mt-2" *ngIf="produit.note_moyenne > 0">
+              <i class="fas fa-star text-warning"></i>
+              <span class="ms-1">{{ produit.note_moyenne.toFixed(1) }}/5</span>
+            </div>
+
+            <!-- Info promotion -->
+            <div class="promotion-info mt-2 small" *ngIf="getProduitPromotion(produit._id) as promotion">
+              <div class="alert alert-info py-1 px-2 mb-0">
+                <i class="fas fa-tags me-1"></i>
+                <span *ngIf="promotion.date_fin">
+                  Promo jusqu'au {{ formatDate(promotion.date_fin) }}
+                </span>
+                <span *ngIf="!promotion.date_fin">
+                  Promo permanente
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="card-footer bg-transparent border-top-0">
+            <div class="btn-group w-100">
+              <button class="btn btn-sm btn-outline-primary" (click)="openEditModal(produit)">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-success" (click)="openStockModal(produit)">
+                <i class="fas fa-cubes"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-info" (click)="openEditPromotionModal(getProduitPromotion(produit._id)!)"
+                      *ngIf="getProduitPromotion(produit._id) as promotion">
+                <i class="fas fa-tags"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="confirmDelete(produit)">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message si aucun produit -->
+      <div class="col-12 text-center py-5" *ngIf="produits.length === 0">
+        <i class="fas fa-box-open fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Aucun produit trouvé</h4>
+        <p>Commencez par ajouter votre premier produit</p>
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <i class="fas fa-plus me-2"></i>
+          Ajouter un produit
+        </button>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container mt-4" *ngIf="totalPages > 1">
+      <ngb-pagination
+        [(page)]="currentPage"
+        [pageSize]="itemsPerPage"
+        [collectionSize]="totalItems"
+        [maxSize]="5"
+        [boundaryLinks]="true"
+        (pageChange)="pageChanged($event)">
+      </ngb-pagination>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Produit -->
+<ng-template #produitModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="fas" [ngClass]="isEditing ? 'fa-edit' : 'fa-plus'"></i>
+      {{ isEditing ? 'Modifier le produit' : 'Nouveau produit' }}
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  
+  <div class="modal-body">
+    <form [formGroup]="produitForm" (ngSubmit)="saveProduit()">
+      <!-- Nom -->
+      <div class="mb-3">
+        <label class="form-label">Nom du produit <span class="text-danger">*</span></label>
+        <input
+          type="text"
+          class="form-control"
+          [class.is-invalid]="produitForm.get('nom')?.invalid && produitForm.get('nom')?.touched"
+          formControlName="nom"
+          placeholder="Ex: Smartphone Samsung">
+        <div class="invalid-feedback" *ngIf="produitForm.get('nom')?.errors?.['required']">
+          Le nom est requis
+        </div>
+        <div class="invalid-feedback" *ngIf="produitForm.get('nom')?.errors?.['minlength']">
+          Minimum 2 caractères
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="mb-3">
+        <label class="form-label">Description</label>
+        <textarea
+          class="form-control"
+          rows="3"
+          formControlName="description"
+          placeholder="Description détaillée du produit..."></textarea>
+      </div>
+
+      <div class="row">
+        <!-- Prix -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Prix (FCFA) <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text">FCFA</span>
+            <input
+              type="number"
+              class="form-control"
+              [class.is-invalid]="produitForm.get('prix')?.invalid && produitForm.get('prix')?.touched"
+              formControlName="prix"
+              min="0"
+              step="0.01">
+          </div>
+          <div class="invalid-feedback">
+            Prix valide requis (0 ou plus)
+          </div>
+        </div>
+
+        <!-- Unité -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Unité de vente</label>
+          <select class="form-select" formControlName="unite">
+            <option value="unite">Unité</option>
+            <option value="kg">Kilogramme (kg)</option>
+            <option value="litre">Litre</option>
+            <option value="metre">Mètre</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <!-- Stock initial -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Stock initial</label>
+          <input
+            type="number"
+            class="form-control"
+            formControlName="stock"
+            min="0">
+        </div>
+
+        <!-- Catégorie -->
+        <div class="col-md-6 mb-3">
+          <label class="form-label">Catégorie <span class="text-danger">*</span></label>
+          <select class="form-select" formControlName="categorie">
+            <option value="">Sélectionner une catégorie</option>
+            <option *ngFor="let cat of categories" [value]="cat._id">
+              {{ cat.nom }}
+            </option>
+          </select>
+          <div class="invalid-feedback" *ngIf="produitForm.get('categorie')?.errors?.['required']">
+            La catégorie est requise
+          </div>
+        </div>
+      </div>
+
+      <!-- Images -->
+      <div class="mb-3">
+        <label class="form-label">Images du produit</label>
+        <div class="image-upload-container">
+          <div class="image-previews mb-2">
+            <div class="preview-item" *ngFor="let image of imagePreviews; let i = index">
+              <img [src]="image" alt="Preview">
+              <button type="button" class="btn-remove" (click)="removeImage(i)">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="upload-area" *ngIf="imagePreviews.length < 5">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              (change)="onImagesSelected($event)"
+              id="imageInput"
+              style="display: none;">
+            <!-- Solution qui fonctionne immédiatement : -->
+          <!-- <button type="button" class="btn btn-outline-primary" (click)="$any(document).getElementById('imageInput')?.click()">
+            <i class="fas fa-cloud-upload-alt me-2"></i>
+            Ajouter des images
+          </button> -->
+             <!-- Solution plus "Angular" mais qui nécessite un peu de code supplémentaire : -->
+           <label for="imageInput" class="btn btn-outline-primary mb-0">
+              <i class="fas fa-cloud-upload-alt me-2"></i>
+              Ajouter des images  </label>   
+            <small class="text-muted d-block mt-1">
+              Max 5 images (JPEG, PNG, GIF - 5MB max)
+            </small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Statut actif -->
+      <div class="mb-3 form-check">
+        <input
+          type="checkbox"
+          class="form-check-input"
+          id="actifCheck"
+          formControlName="actif">
+        <label class="form-check-label" for="actifCheck">
+          Produit actif (visible en vente)
+        </label>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+      <i class="fas fa-times me-2"></i>
+      Annuler
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-primary" 
+      (click)="saveProduit()"
+      [disabled]="produitForm.invalid || uploadingImage">
+      <i class="fas" [ngClass]="isEditing ? 'fa-save' : 'fa-plus-circle'"></i>
+      {{ isEditing ? 'Mettre à jour' : 'Créer' }}
+    </button>
+  </div>
+</ng-template>
+
+
+<!-- Modal Stock -->
+<ng-template #stockModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="fas fa-cubes me-2"></i>
+      Gérer le stock - {{ selectedProduit?.nom }}
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="current-stock mb-4 p-3 bg-light rounded">
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Stock actuel:</span>
+        <span class="fs-4">{{ selectedProduit?.stock }} {{ selectedProduit?.unite }}</span>
+      </div>
+    </div>
+
+    <form [formGroup]="stockForm">
+      <div class="mb-3">
+        <label class="form-label">Opération</label>
+        <select class="form-select" formControlName="operation">
+          <option value="ADD">Ajouter au stock</option>
+          <option value="SUBTRACT">Retirer du stock</option>
+          <option value="SET">Définir le stock exact</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Quantité</label>
+        <input
+          type="number"
+          class="form-control"
+          formControlName="quantite"
+          min="1">
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+      Annuler
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-primary" 
+      (click)="updateStock()"
+      [disabled]="stockForm.invalid">
+      <i class="fas fa-save me-2"></i>
+      Mettre à jour
+    </button>
+  </div>
+</ng-template>
+
+<!-- Modal Confirmation suppression -->
+<ng-template #deleteModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title text-danger">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      Confirmation
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body">
+    <p>
+      Êtes-vous sûr de vouloir supprimer le produit 
+      <strong>"{{ selectedProduit?.nom }}"</strong> ?
+    </p>
+    <p class="text-muted small">
+      Cette action est irréversible et supprimera définitivement le produit.
+    </p>
+    <div class="d-flex justify-content-end">
+      <button type="button" class="btn btn-secondary me-2" (click)="modal.dismiss()">
+        Annuler
+      </button>
+      <button type="button" class="btn btn-danger" (click)="deleteProduit()">
+        <i class="fas fa-trash me-2"></i>
+        Supprimer
+      </button>
+    </div>
+  </div>
+</ng-template>
+
+<!-- Modal Liste des promotions -->
+<ng-template #promotionListModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="fas fa-tags me-2"></i>
+      Gestion des promotions
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+
+  <div class="modal-body">
+    <div class="mb-3">
+      <button class="btn btn-sm btn-success" (click)="openCreatePromotionModal(); modal.dismiss()">
+        <i class="fas fa-plus me-1"></i>
+        Nouvelle promotion
+      </button>
+    </div>
+
+    <div class="list-group" *ngIf="promotions.length > 0">
+      <div class="list-group-item" *ngFor="let promotion of promotions">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h6 class="mb-1">
+              <span class="badge me-2" [ngClass]="getPromotionBadgeClass(promotion)">
+                {{ getPromotionStatus(promotion) }}
+              </span>
+              <span class="text-danger">-{{ promotion.reduction }}%</span>
+            </h6>
+            <p class="mb-1 small">
+              <strong>{{ promotion.produits?.length || 0 }}</strong> produit(s) concerné(s)
+            </p>
+            <p class="mb-0 small text-muted">
+              <span *ngIf="promotion.date_debut">Du {{ formatDate(promotion.date_debut) }}</span>
+              <span *ngIf="promotion.date_fin"> au {{ formatDate(promotion.date_fin) }}</span>
+              <span *ngIf="!promotion.date_debut && !promotion.date_fin">Permanente</span>
+            </p>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-sm btn-outline-primary" 
+                    (click)="openEditPromotionModal(promotion); modal.dismiss()"
+                    title="Modifier la promotion">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-info" 
+                    (click)="openManagePromotionModal(promotion); modal.dismiss()"
+                    title="Gérer les produits">
+              <i class="fas fa-boxes"></i>
+            </button>
+            <button class="btn btn-sm btn-outline-danger" 
+                    (click)="deletePromotion(promotion, $event)"
+                    title="Supprimer la promotion">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center py-4" *ngIf="promotions.length === 0">
+      <i class="fas fa-tags fa-3x text-muted mb-3"></i>
+      <p>Aucune promotion pour le moment</p>
+      <button class="btn btn-sm btn-primary" (click)="openCreatePromotionModal(); modal.dismiss()">
+        Créer votre première promotion
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+      Fermer
+    </button>
+  </div>
+</ng-template>
