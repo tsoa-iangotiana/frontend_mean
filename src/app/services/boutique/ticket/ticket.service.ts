@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { catchError, Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
-import { BoutiqueContextService } from '../context/boutique.context.service(1)';
+import { BoutiqueContextService } from '../context/boutique.context.service';
 
 // Interface pour un ticket
 export interface Ticket {
