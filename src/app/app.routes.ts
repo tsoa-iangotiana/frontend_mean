@@ -11,6 +11,7 @@ import { ProduitsComponent } from './components/boutique/produit/produit.compone
 import { BoutiqueSelectionneeGuard } from './guards/boutique-selectionne.guard';
 import { PayerLoyerComponent } from './components/boutique/paiement/payer-loyer.component';
 import { HistoriqueLoyerComponent } from './components/boutique/paiement/historique-loyer.component';
+import { ListeBoutique } from './components/boutique/liste-boutique/ListeBoutique';
 export const routes: Routes = [
     {path : 'inscription/:role', component : Inscription},
     {path : 'articles', component : ArticleList, canActivate: [authGuard]},
@@ -21,6 +22,7 @@ export const routes: Routes = [
     {path: 'boutique/produits', component: ProduitsComponent, canActivate: [authGuard]},
     {path: 'boutique/loyer',component : PayerLoyerComponent, canActivate: [authGuard, BoutiqueSelectionneeGuard]},
     {path:'boutique/historique-paiement', component:HistoriqueLoyerComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path:'boutique/all', component:ListeBoutique },
     //      {
 //     path: 'admin',
 //     loadComponent: () => import('./components/admin/admin.component')

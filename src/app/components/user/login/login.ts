@@ -18,18 +18,34 @@ export class Login {
   errorMessage = '';
   isLoading = false;
 
+  // Mapping des rôles vers les chemins
+  private readonly roleRoutes: { [key: string]: string } = {
+    'acheteur': '/boutique/all',
+    'boutique': '/boutique/profil',
+    'admin': '/admin/dashboard'
+  };
+
 constructor(
   private userService: UserService,
   public authService: AuthService,   // ← public pour l'utiliser dans le template
   private router: Router
 ) {}
 
+  // ngOnInit(): void {
+  //   // ⚠️ Vérifier si déjà connecté : rediriger vers articles
+  //   if (this.authService.isLoggedIn()) {
+  //     console.log('🔒 Déjà connecté - Redirection vers /articles');
+  //     this.router.navigate(['/articles']);
+  //   }
+  // }
   ngOnInit(): void {
-    // ⚠️ Vérifier si déjà connecté : rediriger vers articles
-    if (this.authService.isLoggedIn()) {
-      console.log('🔒 Déjà connecté - Redirection vers /articles');
-      this.router.navigate(['/articles']);
-    }
+    // Vérifier si déjà connecté via l'observable
+    this.authService.currentUser$.subscribe((user) => {
+      if (this.authService.isLoggedIn() && user) {
+        console.log(`🔒 Déjà connecté en tant que ${user.role} - Redirection`);
+        this.redirectBasedOnRole(user.role);
+      }
+    });
   }
 
   // login.ts - Modifiez la méthode login()
@@ -58,7 +74,9 @@ login() {
           // Petit délai avant redirection
           // Variante A – micro délai
           setTimeout(() => {
-            this.router.navigate(['/articles'], { replaceUrl: true });
+            // this.router.navigate(['/articles'], { replaceUrl: true });
+            // Rediriger en fonction du rôle
+            this.redirectBasedOnRole(response.user.role);
           }, 0);
 
         } catch (error) {
@@ -73,6 +91,24 @@ login() {
     }
   });
 }
+
+private redirectBasedOnRole(role: string): void {
+    const route = this.roleRoutes[role];
+
+    if (route) {
+      console.log(`🔄 Redirection vers ${route} (rôle: ${role})`);
+
+      // Petit délai avant redirection
+      setTimeout(() => {
+        this.router.navigate([route], { replaceUrl: true });
+      }, 100);
+    } else {
+      console.error(`❌ Rôle inconnu: ${role}`);
+      this.errorMessage = `Rôle utilisateur non reconnu: ${role}`;
+      this.isLoading = false;
+    }
+  }
+
 goToRegister(): void {
   this.router.navigate(['/inscription']);
 }

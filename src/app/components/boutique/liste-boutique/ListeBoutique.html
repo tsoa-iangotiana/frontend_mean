@@ -1,0 +1,247 @@
+<div class="liste-boutique-container">
+  <!-- Header avec titre et statistiques -->
+  <div class="page-header">
+    <h1>Boutiques</h1>
+    <div class="stats-cards">
+      <div class="stat-card total">
+        <span class="stat-value">{{stats.total}}</span>
+        <span class="stat-label">Total</span>
+      </div>
+      <div class="stat-card active">
+        <span class="stat-value">{{stats.actives}}</span>
+        <span class="stat-label">Actives</span>
+      </div>
+      <div class="stat-card inactive">
+        <span class="stat-value">{{stats.inactives}}</span>
+        <span class="stat-label">Inactives</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barre de filtres et recherche -->
+  <div class="filters-bar">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="applyFilters()"
+        placeholder="Rechercher une boutique..."
+        class="search-input"
+      >
+      <button *ngIf="searchTerm" (click)="searchTerm = ''; applyFilters()" class="clear-search">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <div class="filter-group">
+      <select
+        [(ngModel)]="selectedCategory"
+        (ngModelChange)="applyFilters()"
+        class="filter-select"
+      >
+        <option value="">Toutes catégories</option>
+        <option *ngFor="let cat of categories" [value]="cat">{{cat}}</option>
+      </select>
+
+      <select
+        [(ngModel)]="activeFilter"
+        (ngModelChange)="applyFilters()"
+        class="filter-select"
+      >
+        <option [ngValue]="null">Tous statuts</option>
+        <option [ngValue]="true">Actives</option>
+        <option [ngValue]="false">Inactives</option>
+      </select>
+    </div>
+
+    <div class="sort-group">
+      <span>Trier par:</span>
+      <button
+        (click)="toggleSort('nom')"
+        [class.active]="sortBy === 'nom'"
+        class="sort-btn"
+      >
+        Nom
+        <i *ngIf="sortBy === 'nom'"
+           [class.fa-sort-up]="sortOrder === 'asc'"
+           [class.fa-sort-down]="sortOrder === 'desc'"
+           class="fas">
+        </i>
+      </button>
+      <button
+        (click)="toggleSort('note')"
+        [class.active]="sortBy === 'note'"
+        class="sort-btn"
+      >
+        Note
+        <i *ngIf="sortBy === 'note'"
+           [class.fa-sort-up]="sortOrder === 'asc'"
+           [class.fa-sort-down]="sortOrder === 'desc'"
+           class="fas">
+        </i>
+      </button>
+      <button
+        (click)="toggleSort('date')"
+        [class.active]="sortBy === 'date'"
+        class="sort-btn"
+      >
+        Date
+        <i *ngIf="sortBy === 'date'"
+           [class.fa-sort-up]="sortOrder === 'asc'"
+           [class.fa-sort-down]="sortOrder === 'desc'"
+           class="fas">
+        </i>
+      </button>
+
+      <button (click)="resetFilters()" class="reset-filters-btn" *ngIf="searchTerm || selectedCategory || activeFilter !== null">
+        <i class="fas fa-redo-alt"></i> Réinitialiser
+      </button>
+    </div>
+  </div>
+
+  <!-- État de chargement -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement des boutiques...</p>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div *ngIf="error" class="error-state">
+    <i class="fas fa-exclamation-circle"></i>
+    <p>{{error}}</p>
+    <button (click)="loadBoutiques()" class="retry-btn">
+      <i class="fas fa-sync-alt"></i> Réessayer
+    </button>
+  </div>
+
+  <!-- Grille des boutiques -->
+  <div *ngIf="!loading && !error" class="boutiques-grid">
+    <div *ngFor="let boutique of paginatedBoutiques" class="boutique-card">
+      <!-- En-tête de la carte avec image/avatar -->
+      <div class="card-header" [class.inactive]="!boutique.active">
+        <div class="boutique-avatar">
+          <img *ngIf="boutique.profil_photo" [src]="boutique.profil_photo" [alt]="boutique.nom">
+          <div *ngIf="!boutique.profil_photo" class="avatar-placeholder">
+            {{boutique.nom.charAt(0).toUpperCase()}}
+          </div>
+        </div>
+        <div class="boutique-status">
+          <span class="status-badge" [class.active]="boutique.active" [class.inactive]="!boutique.active">
+            {{boutique.active ? 'Active' : 'Inactive'}}
+          </span>
+        </div>
+      </div>
+
+      <!-- Corps de la carte -->
+      <div class="card-body">
+        <h3 class="boutique-nom">{{boutique.nom}}</h3>
+
+        <p *ngIf="boutique.slogan" class="boutique-slogan">"{{boutique.slogan}}"</p>
+
+        <div class="boutique-note">
+          <div class="stars">
+            <i *ngFor="let star of getStars(boutique.note_moyenne)"
+               class="fas fa-star"
+               [class.filled]="star <= Math.floor(boutique.note_moyenne || 0)"
+               [class.half]="star === Math.ceil(boutique.note_moyenne || 0)">
+            </i>
+          </div>
+          <span class="note-value">{{boutique.note_moyenne?.toFixed(1) || '0.0'}}</span>
+        </div>
+
+        <div class="boutique-details">
+          <div class="detail-item" *ngIf="boutique.box">
+            <i class="fas fa-store"></i>
+            <span>{{getBoxInfo(boutique)}}</span>
+          </div>
+
+          <div class="detail-item">
+            <i class="fas fa-user"></i>
+            <span>{{getResponsableName(boutique)}}</span>
+          </div>
+
+          <div class="detail-item">
+            <i class="fas fa-calendar"></i>
+            <span>Créée le {{formatDate(boutique.createdAt)}}</span>
+          </div>
+        </div>
+
+        <!-- Catégories -->
+        <div class="boutique-categories" *ngIf="getCategoryNames(boutique).length > 0">
+          <span class="category-tag" *ngFor="let cat of getCategoryNames(boutique).slice(0, 3)">
+            {{cat}}
+          </span>
+          <span class="category-more" *ngIf="getCategoryNames(boutique).length > 3">
+            +{{getCategoryNames(boutique).length - 3}}
+          </span>
+        </div>
+
+        <!-- Description courte -->
+        <p *ngIf="boutique.description" class="boutique-description">
+          {{boutique.description.length > 100 ? (boutique.description | slice:0:100) + '...' : boutique.description}}
+        </p>
+      </div>
+
+      <!-- Pied de carte avec actions -->
+      <div class="card-footer">
+        <button class="btn-view" [routerLink]="['/boutique', boutique._id]">
+          <i class="fas fa-eye"></i> Voir détails
+        </button>
+        <button *ngIf="boutique.contact?.length" class="btn-contact">
+          <i class="fas fa-envelope"></i> Contacter
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Message si aucune boutique -->
+  <div *ngIf="!loading && !error && filteredBoutiques.length === 0" class="empty-state">
+    <i class="fas fa-store-alt"></i>
+    <h3>Aucune boutique trouvée</h3>
+    <p *ngIf="searchTerm || selectedCategory || activeFilter !== null">
+      Aucune boutique ne correspond à vos critères de recherche.
+      <button (click)="resetFilters()" class="link-btn">Réinitialiser les filtres</button>
+    </p>
+    <p *ngIf="!searchTerm && !selectedCategory && activeFilter === null">
+      Aucune boutique n'est disponible pour le moment.
+    </p>
+  </div>
+
+  <!-- Pagination -->
+  <div *ngIf="!loading && !error && filteredBoutiques.length > 0" class="pagination">
+    <button
+      (click)="changePage(currentPage - 1)"
+      [disabled]="currentPage === 1"
+      class="page-btn prev"
+    >
+      <i class="fas fa-chevron-left"></i> Précédent
+    </button>
+
+    <div class="page-numbers">
+      <button
+        *ngFor="let page of [].constructor(totalPages); let i = index"
+        (click)="changePage(i + 1)"
+        [class.active]="currentPage === i + 1"
+        class="page-btn number"
+      >
+        {{i + 1}}
+      </button>
+    </div>
+
+    <button
+      (click)="changePage(currentPage + 1)"
+      [disabled]="currentPage === totalPages"
+      class="page-btn next"
+    >
+      Suivant <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+
+  <!-- Information sur le nombre d'éléments -->
+  <div *ngIf="!loading && !error && filteredBoutiques.length > 0" class="items-info">
+    Affichage {{(currentPage - 1) * itemsPerPage + 1}} -
+    {{Math.min(currentPage * itemsPerPage, totalItems)}}
+    sur {{totalItems}} boutiques
+  </div>
+</div>

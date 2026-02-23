@@ -89,4 +89,9 @@ export class ProfilService {
     formData.append('photo', file);
     return this.http.post(`${this.base}/upload/photo`, formData);
   }
- }
+
+  //recuperer tous les boutiques
+  getAllBoutiques(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/all`);
+  }
+}
