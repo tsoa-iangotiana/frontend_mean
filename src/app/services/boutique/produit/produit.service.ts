@@ -192,15 +192,11 @@ export class ProduitService {
    */
   deleteProduit(id: string): Observable<{ message: string }> {
     try {
-      const boutiqueId = this.getBoutiqueId();
-      
       // Option 1: Envoyer boutiqueId dans le body (si DELETE accepte body)
-      return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`, {
-        body: { boutiqueId }
-      }).pipe(
+      return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`
+      ).pipe(
         catchError(this.handleError('suppression du produit'))
       );
-
       // Option 2: Utiliser les params (si l'API supporte les query params)
       // return this.http.delete<{ message: string }>(`${this.apiUrl}/${id}`, {
       //   params: new HttpParams().set('boutiqueId', boutiqueId)

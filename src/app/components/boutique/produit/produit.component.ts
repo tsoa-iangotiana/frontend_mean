@@ -1,7 +1,7 @@
 // components/boutique/produits/produits.component.ts
 import { Component, OnInit, OnDestroy, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule, FormArray } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgbModal, NgbModule, NgbPaginationModule } from '@ng-bootstrap/ng-bootstrap';
 import { Subject, Subscription } from 'rxjs';
@@ -13,6 +13,8 @@ import { BoutiqueContextService } from '../../../services/boutique/context/bouti
 import { AuthService } from '../../../services/auth';
 import { ToastService } from '../../../services/utils/toast/toast.service';
 import { Router } from '@angular/router';
+import { PromotionService, Promotion, CreatePromotionData, UpdatePromotionData } from '../../../services/boutique/promotion/promotion.service';
+import { PromotionModalComponent, PromotionModalData } from '../promotion/promotion-modal.component';
 
 @Component({
   selector: 'app-produits',
@@ -23,15 +25,15 @@ import { Router } from '@angular/router';
     FormsModule,
     RouterModule,
     NgbModule,
-    NgbPaginationModule
+    NgbPaginationModule,
+    PromotionModalComponent
   ],
   templateUrl: './produit.component.html',
   styleUrls: ['./produit.component.css']
 })
-// produits.component.ts corrigé
 export class ProduitsComponent implements OnInit, OnDestroy {
   // ===== ÉTATS =====
-  loading = false; // Commence à false, pas true
+  loading = false;
   isModalOpen = false;
   isEditing = false;
   selectedProduit: Produit | null = null;
@@ -41,6 +43,8 @@ export class ProduitsComponent implements OnInit, OnDestroy {
   produits: Produit[] = [];
   categories: Categorie[] = [];
   filteredCategories: Categorie[] = [];
+  promotions: Promotion[] = [];
+  produitsWithPromo: Set<string> = new Set(); // IDs des produits avec promo active
   
   // ===== PAGINATION =====
   currentPage = 1;
@@ -52,6 +56,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
   searchTerm = '';
   selectedCategorie = '';
   showActifOnly = true;
+  showPromoOnly = false;
   
   // ===== FORMULAIRES =====
   produitForm: FormGroup;
@@ -69,12 +74,14 @@ export class ProduitsComponent implements OnInit, OnDestroy {
   @ViewChild('produitModal') produitModal: any;
   @ViewChild('stockModal') stockModal: any;
   @ViewChild('deleteModal') deleteModal: any;
+  @ViewChild('promotionListModal') promotionListModal: any;
 
   constructor(
     private fb: FormBuilder,
     private produitService: ProduitService,
     private categorieService: CategorieService,
     private boutiqueContext: BoutiqueContextService,
+    private promotionService: PromotionService,
     private authService: AuthService,
     private modalService: NgbModal,
     private toastService: ToastService,
@@ -98,7 +105,6 @@ export class ProduitsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    // Utiliser setTimeout pour éviter ExpressionChangedAfterItHasBeenChecked
     setTimeout(() => {
       this.subscriptions.push(
         this.boutiqueContext.boutiqueSelectionnee$.pipe(
@@ -108,6 +114,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
             console.log('🏪 Boutique sélectionnée:', boutique.nom);
             this.loadCategories();
             this.loadProduits();
+            this.loadPromotions();
           } else {
             console.warn('⚠️ Aucune boutique sélectionnée');
             this.loading = false;
@@ -169,6 +176,34 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     });
   }
 
+  loadPromotions(): void {
+    this.promotionService.getPromotions().subscribe({
+      next: (promotions) => {
+        this.promotions = promotions;
+        this.updateProduitsWithPromo();
+        console.log('🏷️ Promotions chargées:', this.promotions.length);
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('❌ Erreur chargement promotions:', error);
+      }
+    });
+  }
+
+  updateProduitsWithPromo(): void {
+    this.produitsWithPromo.clear();
+    this.promotions.forEach(promo => {
+      if (Array.isArray(promo.produits)) {
+        promo.produits.forEach(prod => {
+          const prodId = typeof prod === 'string' ? prod : prod._id;
+          if (prodId) {
+            this.produitsWithPromo.add(prodId);
+          }
+        });
+      }
+    });
+  }
+
   loadProduits(): void {
     const boutique = this.boutiqueContext.getBoutiqueSelectionnee();
     if (!boutique) {
@@ -177,7 +212,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
-    this.cdr.detectChanges(); // Force la détection immédiate
+    this.cdr.detectChanges();
 
     const params: any = {
       page: this.currentPage,
@@ -198,11 +233,20 @@ export class ProduitsComponent implements OnInit, OnDestroy {
 
     this.produitService.getProduits(params).subscribe({
       next: (response) => {
-        this.produits = response.produits;
+        let produits = response.produits;
+        
+        // Appliquer le filtre promo uniquement si nécessaire
+        if (this.showPromoOnly) {
+          produits = produits.filter(p => 
+            this.produitsWithPromo.has(p._id)
+          );
+        }
+
+        this.produits = produits;
         this.totalItems = response.total;
         this.totalPages = response.totalPages;
         this.loading = false;
-        this.cdr.detectChanges(); // Force la mise à jour de la vue
+        this.cdr.detectChanges();
       },
       error: (error) => {
         console.error('❌ Erreur chargement produits:', error);
@@ -225,20 +269,204 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     this.loadProduits();
   }
 
-  toggleActifFilter(): void {
-    console.log('🔄 Toggle filtre actif. Actuel:', this.showActifOnly);
-    this.showActifOnly = !this.showActifOnly;
+  onActifFilterChange(value: boolean): void {
+    this.showActifOnly = value;
     this.currentPage = 1;
     this.loadProduits();
-    // Pas besoin de cdr.detectChanges() ici car loadProduits() le fait
+  }
+
+  onPromoFilterChange(value: boolean): void {
+    this.showPromoOnly = value;
+    this.currentPage = 1;
+    this.loadProduits();
   }
 
   resetFilters(): void {
     this.searchTerm = '';
     this.selectedCategorie = '';
     this.showActifOnly = true;
+    this.showPromoOnly = false;
     this.currentPage = 1;
     this.loadProduits();
+  }
+
+  // ===== GESTION DES PROMOTIONS =====
+  openCreatePromotionModal(): void {
+    const modalData: PromotionModalData = {
+      produits: this.produits,
+      isEditing: false
+    };
+
+    const modalRef = this.modalService.open(PromotionModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.data = modalData;
+    
+    modalRef.componentInstance.savePromotion.subscribe((promotionData: any) => {
+      this.createPromotion(promotionData);
+    });
+
+    modalRef.componentInstance.closeModal.subscribe(() => {
+      modalRef.close();
+    });
+  }
+
+  openEditPromotionModal(promotion: Promotion): void {
+    const modalData: PromotionModalData = {
+      produits: this.produits,
+      isEditing: true,
+      promotion: promotion
+    };
+
+    const modalRef = this.modalService.open(PromotionModalComponent, {
+      size: 'lg',
+      backdrop: 'static'
+    });
+
+    modalRef.componentInstance.data = modalData;
+    
+    modalRef.componentInstance.savePromotion.subscribe((promotionData: any) => {
+      this.updatePromotion(promotion._id, promotionData);
+    });
+
+    modalRef.componentInstance.closeModal.subscribe(() => {
+      modalRef.close();
+    });
+  }
+
+  openPromotionListModal(): void {
+    this.loadPromotions(); // Recharger les promotions
+    this.modalService.open(this.promotionListModal, { size: 'lg' });
+  }
+
+  private createPromotion(promotionData: any): void {
+    // Vérifier si des produits sont déjà en promotion
+    const produitsDejaEnPromo = promotionData.produits.filter((id: string) => 
+      this.produitsWithPromo.has(id)
+    );
+
+    if (produitsDejaEnPromo.length > 0) {
+      const nomsProduits = this.produits
+        .filter(p => produitsDejaEnPromo.includes(p._id))
+        .map(p => p.nom)
+        .join(', ');
+      
+      this.toastService.show(
+        `Certains produits sont déjà en promotion: ${nomsProduits}. Veuillez les retirer.`,
+        'warning'
+      );
+      return;
+    }
+
+    this.promotionService.createPromotion(promotionData).subscribe({
+      next: () => {
+        this.toastService.show('Promotion créée avec succès', 'success');
+        this.loadPromotions();
+        this.loadProduits();
+      },
+      error: (error) => {
+        console.error('❌ Erreur création promotion:', error);
+        this.toastService.show(error.error?.message || 'Erreur création promotion', 'error');
+      }
+    });
+  }
+
+  private updatePromotion(id: string, promotionData: any): void {
+    const updateData: UpdatePromotionData = {
+      reduction: promotionData.reduction,
+      date_debut: promotionData.date_debut,
+      date_fin: promotionData.date_fin
+    };
+
+    this.promotionService.updatePromotion(id, updateData).subscribe({
+      next: () => {
+        this.toastService.show('Promotion mise à jour avec succès', 'success');
+        this.loadPromotions();
+        this.loadProduits();
+      },
+      error: (error) => {
+        console.error('❌ Erreur mise à jour promotion:', error);
+        this.toastService.show(error.error?.message || 'Erreur mise à jour promotion', 'error');
+      }
+    });
+  }
+
+  deletePromotion(promotion: Promotion, event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette promotion ?')) {
+      this.promotionService.deletePromotion(promotion._id).subscribe({
+        next: () => {
+          this.toastService.show('Promotion supprimée avec succès', 'success');
+          this.loadPromotions();
+          this.loadProduits();
+          this.modalService.dismissAll();
+        },
+        error: (error) => {
+          console.error('❌ Erreur suppression promotion:', error);
+          this.toastService.show(error.error?.message || 'Erreur suppression promotion', 'error');
+        }
+      });
+    }
+  }
+
+  getProduitPromotion(produitId: string): Promotion | null {
+    for (const promo of this.promotions) {
+      if (Array.isArray(promo.produits)) {
+        const hasProduit = promo.produits.some(prod => 
+          (typeof prod === 'string' && prod === produitId) ||
+          (prod && prod._id === produitId)
+        );
+        if (hasProduit) {
+          return promo;
+        }
+      }
+    }
+    return null;
+  }
+
+  getProduitPromotionReduction(produitId: string): number | null {
+    const promo = this.getProduitPromotion(produitId);
+    return promo ? promo.reduction : null;
+  }
+
+  getPromotionStatus(promotion: Promotion): string {
+    const now = new Date();
+    const debut = promotion.date_debut ? new Date(promotion.date_debut) : null;
+    const fin = promotion.date_fin ? new Date(promotion.date_fin) : null;
+
+    if (debut && debut > now) {
+      return 'À venir';
+    } else if (fin && fin < now) {
+      return 'Expirée';
+    } else if (!debut && !fin) {
+      return 'Permanente';
+    } else if (!debut && fin && fin >= now) {
+      return 'Active (jusqu\'au ' + this.formatDate(fin) + ')';
+    } else if (debut && debut <= now && !fin) {
+      return 'Active (permanente)';
+    } else if (debut && debut <= now && fin && fin >= now) {
+      return 'Active';
+    }
+    
+    return 'Programmée';
+  }
+
+  getPromotionBadgeClass(promotion: Promotion): string {
+    const status = this.getPromotionStatus(promotion);
+    if (status.includes('Active')) {
+      return 'bg-success';
+    } else if (status.includes('À venir')) {
+      return 'bg-warning';
+    } else if (status.includes('Expirée')) {
+      return 'bg-secondary';
+    } else {
+      return 'bg-info';
+    }
   }
 
   // ===== GESTION DES PRODUITS =====
@@ -254,10 +482,6 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     this.selectedFiles = [];
     
     this.modalService.open(this.produitModal, { size: 'lg', backdrop: 'static' });
-    
-    setTimeout(() => {
-      this.cdr.detectChanges();
-    });
   }
 
   openEditModal(produit: Produit): void {
@@ -278,10 +502,6 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     this.selectedFiles = [];
     
     this.modalService.open(this.produitModal, { size: 'lg', backdrop: 'static' });
-    
-    setTimeout(() => {
-      this.cdr.detectChanges();
-    });
   }
 
   openStockModal(produit: Produit): void {
@@ -289,10 +509,6 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     this.stockForm.reset({ operation: 'ADD' });
     
     this.modalService.open(this.stockModal, { size: 'md' });
-    
-    setTimeout(() => {
-      this.cdr.detectChanges();
-    });
   }
 
   confirmDelete(produit: Produit): void {
@@ -348,7 +564,6 @@ export class ProduitsComponent implements OnInit, OnDestroy {
 
     this.uploadingImage = true;
     const formValue = this.produitForm.value;
-    
     const produitData: ProduitInput = {
       nom: formValue.nom,
       description: formValue.description,
@@ -483,17 +698,18 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     }).format(prix);
   }
 
+  formatDate(date: Date): string {
+    return new Intl.DateTimeFormat('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    }).format(new Date(date));
+  }
+
   pageChanged(page: number): void {
     this.currentPage = page;
     this.loadProduits();
   }
-  
-  onActifFilterChange(value: boolean): void {
-  console.log('Filtre actif change ->', value);
-  this.showActifOnly = value;
-  this.currentPage = 1;
-  this.loadProduits();
-}
 
   private markFormGroupTouched(formGroup: FormGroup): void {
     Object.values(formGroup.controls).forEach(control => {
@@ -503,4 +719,87 @@ export class ProduitsComponent implements OnInit, OnDestroy {
       }
     });
   }
+  // Ajoutez ces méthodes dans la classe ProduitsComponent
+
+// Ouvrir le modal de gestion des produits d'une promotion
+openManagePromotionModal(promotion: Promotion): void {
+  const modalData: PromotionModalData = {
+    produits: this.produits,
+    isEditing: true,
+    promotion: promotion,
+    mode: 'manage'
+  };
+
+  const modalRef = this.modalService.open(PromotionModalComponent, {
+    size: 'lg',
+    backdrop: 'static'
+  });
+
+  modalRef.componentInstance.data = modalData;
+  
+  modalRef.componentInstance.savePromotion.subscribe((promotionData: any) => {
+    this.updatePromotionProducts(promotion._id, promotionData.produits);
+  });
+
+  modalRef.componentInstance.deletePromotion.subscribe((promotionId: string) => {
+    this.deletePromotion({ _id: promotionId } as Promotion);
+  });
+
+  modalRef.componentInstance.closeModal.subscribe(() => {
+    modalRef.close();
+  });
+}
+
+// Mettre à jour les produits d'une promotion
+private updatePromotionProducts(id: string, produits: string[]): void {
+  // Comparer avec les produits actuels pour déterminer les ajouts/retraits
+  const promotion = this.promotions.find(p => p._id === id);
+  if (!promotion) return;
+
+  const produitsActuels = new Set(
+    Array.isArray(promotion.produits) 
+      ? promotion.produits.map(p => typeof p === 'string' ? p : p._id)
+      : []
+  );
+  
+  const nouveauxProduits = new Set(produits);
+  
+  // Produits à ajouter (dans nouveaux mais pas dans actuels)
+  const aAjouter = Array.from(nouveauxProduits).filter(p => !produitsActuels.has(p));
+  
+  // Produits à retirer (dans actuels mais pas dans nouveaux)
+  const aRetirer = Array.from(produitsActuels).filter(p => !nouveauxProduits.has(p));
+
+  if (aAjouter.length > 0) {
+    this.promotionService.addProduitsToPromotion(id, { produits: aAjouter }).subscribe({
+      next: () => {
+        this.toastService.show(`${aAjouter.length} produit(s) ajouté(s)`, 'success');
+        this.loadPromotions();
+        this.loadProduits();
+      },
+      error: (error) => {
+        console.error('❌ Erreur ajout produits:', error);
+        this.toastService.show('Erreur lors de l\'ajout des produits', 'error');
+      }
+    });
+  }
+
+  if (aRetirer.length > 0) {
+    this.promotionService.removeProduitsFromPromotion(id, { produits: aRetirer }).subscribe({
+      next: () => {
+        this.toastService.show(`${aRetirer.length} produit(s) retiré(s)`, 'success');
+        this.loadPromotions();
+        this.loadProduits();
+      },
+      error: (error) => {
+        console.error('❌ Erreur retrait produits:', error);
+        this.toastService.show('Erreur lors du retrait des produits', 'error');
+      }
+    });
+  }
+
+  if (aAjouter.length === 0 && aRetirer.length === 0) {
+    this.toastService.show('Aucune modification détectée', 'info');
+  }
+}
 }

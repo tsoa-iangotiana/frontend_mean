@@ -13,7 +13,9 @@ export class BoutiqueContextService {
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$: Observable<boolean> = this.loadingSubject.asObservable();
 
-  constructor() {}
+  constructor() {
+    this.restaurerDerniereBoutique();
+  }
 
   setBoutiqueSelectionnee(boutique: Boutique | null): void {
     // Sauvegarder aussi dans localStorage pour persister après refresh
