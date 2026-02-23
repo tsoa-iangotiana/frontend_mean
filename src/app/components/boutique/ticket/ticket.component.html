@@ -1,0 +1,379 @@
+<!-- components/boutique/tickets/tickets.component.html -->
+<div class="tickets-container">
+  <!-- Header avec titre et bouton -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+      <i class="fas fa-headset me-2"></i>
+      Support technique
+      <small class="text-muted fs-6 ms-2" *ngIf="ticketStats?.total">
+        ({{ ticketStats?.total }} ticket(s))
+      </small>
+    </h2>
+    <button class="btn btn-primary" (click)="openCreateModal()">
+      <i class="fas fa-plus me-2"></i>
+      Nouveau ticket
+    </button>
+  </div>
+
+  <!-- Statistiques -->
+  <div class="stats-row mb-4" *ngIf="ticketStats">
+    <div class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-icon">
+          <i class="fas fa-ticket-alt"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total</span>
+          <span class="stat-value">{{ ticketStats.total }}</span>
+        </div>
+      </div>
+      
+      <div class="stat-card ouvert">
+        <div class="stat-icon">
+          <i class="fas fa-envelope-open"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Ouverts</span>
+          <span class="stat-value">{{ ticketStats.ouvert }}</span>
+        </div>
+      </div>
+      
+      <div class="stat-card en-cours">
+        <div class="stat-icon">
+          <i class="fas fa-spinner fa-spin"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">En cours</span>
+          <span class="stat-value">{{ ticketStats.enCours }}</span>
+        </div>
+      </div>
+      
+      <div class="stat-card resolu">
+        <div class="stat-icon">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Résolus</span>
+          <span class="stat-value">{{ ticketStats.resolu }}</span>
+        </div>
+      </div>
+      
+      <div class="stat-card urgent">
+        <div class="stat-icon">
+          <i class="fas fa-exclamation-triangle"></i>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Urgents</span>
+          <span class="stat-value">{{ ticketStats.urgent }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtres et recherche -->
+  <div class="filters-card card mb-4">
+    <div class="card-body">
+      <div class="row g-3">
+        <!-- Recherche -->
+        <div class="col-md-4">
+          <label class="form-label">Recherche</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Sujet du ticket..."
+              (input)="onSearch($event)">
+          </div>
+        </div>
+
+        <!-- Filtre statut -->
+        <div class="col-md-3">
+          <label class="form-label">Statut</label>
+          <select class="form-select" [(ngModel)]="filters.statut" (change)="applyFilters()">
+            <option value="">Tous les statuts</option>
+            <option *ngFor="let statut of statuts" [value]="statut">
+              {{ getStatusLabel(statut) }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Filtre priorité -->
+        <div class="col-md-3">
+          <label class="form-label">Priorité</label>
+          <select class="form-select" [(ngModel)]="filters.priorite" (change)="applyFilters()">
+            <option value="">Toutes les priorités</option>
+            <option *ngFor="let priorite of priorites" [value]="priorite">
+              {{ getPriorityLabel(priorite) }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Bouton reset -->
+        <div class="col-md-2 d-flex align-items-end">
+          <button class="btn btn-outline-secondary w-100" (click)="resetFilters()">
+            <i class="fas fa-undo me-2"></i>
+            Réinitialiser
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading indicator -->
+  <div class="text-center my-5" *ngIf="loading">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Chargement...</span>
+    </div>
+    <p class="mt-2">Chargement des tickets...</p>
+  </div>
+
+  <!-- Liste des tickets -->
+  <div class="tickets-list" *ngIf="!loading">
+    <div class="row g-4">
+      <div class="col-12" *ngFor="let ticket of tickets">
+        <div class="card ticket-card">
+          <div class="card-body">
+            <!-- En-tête du ticket -->
+            <div class="ticket-header">
+              <div class="ticket-title">
+                <h5 class="card-title">
+                  {{ ticket.sujet }}
+                  <small class="text-muted ms-2">#{{ ticket._id | slice:-6 }}</small>
+                </h5>
+                <div class="ticket-badges">
+                  <span class="badge me-2" [ngClass]="getStatusBadgeClass(ticket.statut)">
+                    <i class="fas {{ getStatusIcon(ticket.statut) }} me-1"></i>
+                    {{ getStatusLabel(ticket.statut) }}
+                  </span>
+                  <span class="badge me-2" [ngClass]="getPriorityBadgeClass(ticket.priorite)">
+                    <i class="fas {{ getPriorityIcon(ticket.priorite) }} me-1"></i>
+                    {{ getPriorityLabel(ticket.priorite) }}
+                  </span>
+                </div>
+              </div>
+              <div class="ticket-date">
+                <i class="far fa-calendar-alt me-1"></i>
+                {{ ticket.createdAt | date:'dd/MM/yyyy HH:mm' }}
+              </div>
+            </div>
+
+            <!-- Description -->
+            <p class="ticket-description mt-3">
+              {{ ticket.description }}
+            </p>
+
+            <!-- Actions -->
+            <div class="ticket-actions mt-3">
+              <div class="btn-group">
+                <button class="btn btn-sm btn-outline-info" (click)="viewTicketDetails(ticket)" title="Voir détails">
+                  <i class="fas fa-eye"></i>
+                </button>
+                
+                <!-- Actions selon statut -->
+                <ng-container [ngSwitch]="ticket.statut">
+                  <button *ngSwitchCase="'OUVERT'" class="btn btn-sm btn-outline-warning" 
+                          (click)="updateStatus(ticket, 'EN_COURS')" title="Prendre en charge">
+                    <i class="fas fa-hand-paper"></i>
+                  </button>
+                  
+                  <button *ngSwitchCase="'EN_COURS'" class="btn btn-sm btn-outline-success" 
+                          (click)="resolveTicket(ticket)" title="Marquer comme résolu">
+                    <i class="fas fa-check"></i>
+                  </button>
+                  
+                  <button *ngSwitchCase="'RESOLU'" class="btn btn-sm btn-outline-secondary" 
+                          (click)="reopenTicket(ticket)" title="Rouvrir">
+                    <i class="fas fa-redo-alt"></i>
+                  </button>
+                </ng-container>
+
+                <!-- Actions priorité -->
+                <div class="btn-group ms-2" ngbDropdown>
+                  <button class="btn btn-sm btn-outline-secondary" ngbDropdownToggle>
+                    <i class="fas fa-flag"></i> Priorité
+                  </button>
+                    <div ngbDropdownMenu>
+                    <button *ngFor="let p of priorites" ngbDropdownItem 
+                            (click)="updatePriorityFromString(ticket, p)"
+                            [class.active]="ticket.priorite === p">
+                        <i class="fas {{ getPriorityIcon(p) }} me-2"></i>
+                        {{ getPriorityLabel(p) }}
+                    </button>
+                    </div>
+                </div>
+
+                <!-- Bouton suppression -->
+                <button class="btn btn-sm btn-outline-danger ms-2" (click)="deleteTicket(ticket)" title="Supprimer">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Résolution info -->
+            <div class="ticket-resolution mt-2 text-muted small" *ngIf="ticket.resolvedAt">
+              <i class="fas fa-check-circle text-success me-1"></i>
+              Résolu le {{ ticket.resolvedAt | date:'dd/MM/yyyy HH:mm' }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message si aucun ticket -->
+      <div class="col-12 text-center py-5" *ngIf="tickets.length === 0">
+        <i class="fas fa-ticket-alt fa-4x text-muted mb-3"></i>
+        <h4 class="text-muted">Aucun ticket trouvé</h4>
+        <p>Créez votre premier ticket pour contacter le support</p>
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <i class="fas fa-plus me-2"></i>
+          Nouveau ticket
+        </button>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="pagination-container mt-4" *ngIf="tickets.length > 0">
+      <ngb-pagination
+        [(page)]="filters.page!"
+        [pageSize]="filters.limit!"
+        [collectionSize]="ticketStats?.total || 0"
+        [maxSize]="5"
+        [boundaryLinks]="true"
+        [directionLinks]="true"
+        (pageChange)="loadTickets()">
+      </ngb-pagination>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de création de ticket -->
+<ng-template #createTicketModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="fas fa-plus-circle me-2"></i>
+      Nouveau ticket de support
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  
+  <div class="modal-body">
+    <form [formGroup]="ticketForm">
+      <!-- Sujet -->
+      <div class="mb-3">
+        <label class="form-label">Sujet <span class="text-danger">*</span></label>
+        <input
+          type="text"
+          class="form-control"
+          [class.is-invalid]="ticketForm.get('sujet')?.invalid && ticketForm.get('sujet')?.touched"
+          formControlName="sujet"
+          placeholder="Résumé du problème">
+        <div class="invalid-feedback" *ngIf="ticketForm.get('sujet')?.errors?.['required']">
+          Le sujet est requis
+        </div>
+        <div class="invalid-feedback" *ngIf="ticketForm.get('sujet')?.errors?.['minlength']">
+          Minimum 5 caractères
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="mb-3">
+        <label class="form-label">Description <span class="text-danger">*</span></label>
+        <textarea
+          class="form-control"
+          rows="5"
+          [class.is-invalid]="ticketForm.get('description')?.invalid && ticketForm.get('description')?.touched"
+          formControlName="description"
+          placeholder="Décrivez votre problème en détail..."></textarea>
+        <div class="invalid-feedback" *ngIf="ticketForm.get('description')?.errors?.['required']">
+          La description est requise
+        </div>
+        <div class="invalid-feedback" *ngIf="ticketForm.get('description')?.errors?.['minlength']">
+          Minimum 10 caractères
+        </div>
+      </div>
+
+      <!-- Priorité -->
+      <div class="mb-3">
+        <label class="form-label">Priorité <span class="text-danger">*</span></label>
+        <select class="form-select" formControlName="priorite">
+          <option value="BASSE">Basse</option>
+          <option value="MOYENNE">Moyenne</option>
+          <option value="HAUTE">Haute</option>
+          <option value="URGENT">Urgent</option>
+        </select>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+      <i class="fas fa-times me-2"></i>
+      Annuler
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-primary" 
+      (click)="createTicket()"
+      [disabled]="ticketForm.invalid || loading">
+      <i class="fas fa-paper-plane me-2"></i>
+      Envoyer
+    </button>
+  </div>
+</ng-template>
+
+<!-- Modal de détails du ticket -->
+<ng-template #ticketDetailsModal let-modal>
+  <div class="modal-header" *ngIf="selectedTicket">
+    <h5 class="modal-title">
+      <i class="fas fa-ticket-alt me-2"></i>
+      Détails du ticket
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  
+  <div class="modal-body" *ngIf="selectedTicket">
+    <div class="ticket-details">
+      <div class="detail-row">
+        <strong>Sujet:</strong>
+        <span>{{ selectedTicket.sujet }}</span>
+      </div>
+      
+      <div class="detail-row">
+        <strong>Statut:</strong>
+        <span class="badge" [ngClass]="getStatusBadgeClass(selectedTicket.statut)">
+          <i class="fas {{ getStatusIcon(selectedTicket.statut) }} me-1"></i>
+          {{ getStatusLabel(selectedTicket.statut) }}
+        </span>
+      </div>
+      
+      <div class="detail-row">
+        <strong>Priorité:</strong>
+        <span class="badge" [ngClass]="getPriorityBadgeClass(selectedTicket.priorite)">
+          <i class="fas {{ getPriorityIcon(selectedTicket.priorite) }} me-1"></i>
+          {{ getPriorityLabel(selectedTicket.priorite) }}
+        </span>
+      </div>
+      
+      <div class="detail-row">
+        <strong>Date de création:</strong>
+        <span>{{ selectedTicket.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      
+      <div class="detail-row" *ngIf="selectedTicket.resolvedAt">
+        <strong>Date de résolution:</strong>
+        <span>{{ selectedTicket.resolvedAt | date:'dd/MM/yyyy HH:mm' }}</span>
+      </div>
+      
+      <div class="detail-row description">
+        <strong>Description:</strong>
+        <p class="mt-2 p-3 bg-light rounded">{{ selectedTicket.description }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+      Fermer
+    </button>
+  </div>
+</ng-template>
