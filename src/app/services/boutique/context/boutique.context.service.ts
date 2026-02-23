@@ -1,10 +1,10 @@
-// services/boutique/boutique-context.service.ts
-import { Injectable } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Boutique } from '../profil/profil.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class BoutiqueContextService {
   private boutiqueSelectionneeSubject = new BehaviorSubject<Boutique | null>(null);
@@ -13,16 +13,23 @@ export class BoutiqueContextService {
   private loadingSubject = new BehaviorSubject<boolean>(false);
   loading$: Observable<boolean> = this.loadingSubject.asObservable();
 
-  constructor() {
+  private isBrowser: boolean;
+
+  constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    this.isBrowser = isPlatformBrowser(platformId);
+    // Restauration synchrone au démarrage — seulement en browser
+    // C'est ce qui garantit que le BehaviorSubject a déjà la bonne valeur
+    // quand payer-loyer s'y abonne, sans avoir besoin de startWith().
     this.restaurerDerniereBoutique();
   }
 
   setBoutiqueSelectionnee(boutique: Boutique | null): void {
-    // Sauvegarder aussi dans localStorage pour persister après refresh
-    if (boutique) {
-      localStorage.setItem('boutiqueSelectionnee', JSON.stringify(boutique));
-    } else {
-      localStorage.removeItem('boutiqueSelectionnee');
+    if (this.isBrowser) {
+      if (boutique) {
+        localStorage.setItem('boutiqueSelectionnee', JSON.stringify(boutique));
+      } else {
+        localStorage.removeItem('boutiqueSelectionnee');
+      }
     }
     this.boutiqueSelectionneeSubject.next(boutique);
   }
@@ -35,29 +42,30 @@ export class BoutiqueContextService {
     this.loadingSubject.next(loading);
   }
 
-  // Charger la boutique depuis localStorage au démarrage
   restaurerDerniereBoutique(): Boutique | null {
+    if (!this.isBrowser) return null;
+
     const saved = localStorage.getItem('boutiqueSelectionnee');
     if (saved) {
       try {
         const boutique = JSON.parse(saved);
         this.boutiqueSelectionneeSubject.next(boutique);
         return boutique;
-      } catch (e) {
+      } catch {
         localStorage.removeItem('boutiqueSelectionnee');
       }
     }
     return null;
   }
 
-  // Vérifier si une boutique est sélectionnée
   hasBoutiqueSelectionnee(): boolean {
     return this.boutiqueSelectionneeSubject.getValue() !== null;
   }
 
-  // Effacer la sélection
   clearBoutiqueSelectionnee(): void {
-    localStorage.removeItem('boutiqueSelectionnee');
+    if (this.isBrowser) {
+      localStorage.removeItem('boutiqueSelectionnee');
+    }
     this.boutiqueSelectionneeSubject.next(null);
   }
 }

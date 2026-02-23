@@ -693,7 +693,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
   formatPrix(prix: number): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'XOF',
+      currency: 'EUR',
       minimumFractionDigits: 0
     }).format(prix);
   }

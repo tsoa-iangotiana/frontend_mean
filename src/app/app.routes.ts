@@ -9,7 +9,8 @@ import { Login } from './components/user/login/login';
 import { Profil } from './components/boutique/profil/profil';
 import { ProduitsComponent } from './components/boutique/produit/produit.component';
 import { BoutiqueSelectionneeGuard } from './guards/boutique-selectionne.guard';
-
+import { PayerLoyerComponent } from './components/boutique/paiement/payer-loyer.component';
+import { HistoriqueLoyerComponent } from './components/boutique/paiement/historique-loyer.component';
 export const routes: Routes = [
     {path : 'inscription/:role', component : Inscription},
     {path : 'articles', component : ArticleList, canActivate: [authGuard]},
@@ -18,7 +19,9 @@ export const routes: Routes = [
     {path: 'boutique/profil', component: Profil, canActivate: [authGuard]},
     {path : '', redirectTo: '/login', pathMatch: 'full'},
     {path: 'boutique/produits', component: ProduitsComponent, canActivate: [authGuard]},
-//      {
+    {path: 'boutique/loyer',component : PayerLoyerComponent, canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path:'boutique/historique-paiement', component:HistoriqueLoyerComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    //      {
 //     path: 'admin',
 //     loadComponent: () => import('./components/admin/admin.component')
 //       .then(m => m.Admin),

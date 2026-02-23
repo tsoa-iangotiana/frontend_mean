@@ -1,0 +1,377 @@
+<!-- historique-loyer.component.html -->
+<div class="min-h-screen bg-gray-100 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    
+    <!-- En-tête avec navigation -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-4">
+        
+          <h1 class="text-3xl font-bold text-gray-900">Historique des paiements</h1>
+        </div>
+        
+      </div>
+      <p class="mt-2 text-sm text-gray-600">
+        Consultez l'ensemble de vos paiements de loyer
+      </p>
+    </div>
+
+    <!-- Loader -->
+    <div *ngIf="isLoading" class="text-center py-12">
+      <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"></div>
+      <p class="mt-2 text-gray-600">Chargement de l'historique...</p>
+    </div>
+
+    <!-- Contenu principal -->
+    <div *ngIf="!isLoading">
+      
+      <!-- Cartes de statistiques -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <!-- Total dépensé -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0 bg-indigo-500 rounded-md p-3">
+                <i class="fas fa-wallet text-white text-xl"></i>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Total dépensé</dt>
+                  <dd class="text-lg font-bold text-gray-900">{{ formatMontant(totalDepense) }}</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nombre de paiements -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
+                <i class="fas fa-credit-card text-white text-xl"></i>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Nombre de paiements</dt>
+                  <dd class="text-lg font-bold text-gray-900">{{ totalPaiements }}</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Moyenne par paiement -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
+                <i class="fas fa-chart-line text-white text-xl"></i>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Moyenne par paiement</dt>
+                  <dd class="text-lg font-bold text-gray-900">{{ formatMontant(moyenneParPaiement) }}</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Périodes couvertes -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+          <div class="p-5">
+            <div class="flex items-center">
+              <div class="flex-shrink-0 bg-purple-500 rounded-md p-3">
+                <i class="fas fa-calendar-alt text-white text-xl"></i>
+              </div>
+              <div class="ml-5 w-0 flex-1">
+                <dl>
+                  <dt class="text-sm font-medium text-gray-500 truncate">Périodes couvertes</dt>
+                  <dd class="text-lg font-bold text-gray-900">
+                    {{ paiements.length > 0 ? (paiements[0]?.date_paiement | date:'yyyy') + ' - ' + (paiements[paiements.length-1]?.date_paiement | date:'yyyy') : '-' }}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtres avancés -->
+      <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-8">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">
+            <i class="fas fa-filter mr-2 text-indigo-600"></i>
+            Filtres avancés
+          </h3>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- Recherche -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Recherche</label>
+              <div class="relative">
+                <input
+                  type="text"
+                  [(ngModel)]="searchTerm"
+                  (ngModelChange)="applyFilters()"
+                  placeholder="Mois, année..."
+                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 pl-10"
+                />
+                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+              </div>
+            </div>
+
+            <!-- Filtre période -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Période</label>
+              <select
+                [(ngModel)]="filterPeriode"
+                (ngModelChange)="applyFilters()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option *ngFor="let opt of periodeOptions" [value]="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Filtre statut -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Statut</label>
+              <select
+                [(ngModel)]="filterStatut"
+                (ngModelChange)="applyFilters()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option *ngFor="let opt of statutOptions" [value]="opt.value">
+                  {{ opt.label }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Bouton reset -->
+            <div class="flex items-end">
+              <button
+                (click)="resetFilters()"
+                class="w-full px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <i class="fas fa-undo mr-2"></i>
+                Réinitialiser
+              </button>
+            </div>
+          </div>
+
+          <!-- Filtres date (2ème ligne) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Du</label>
+              <input
+                type="date"
+                [(ngModel)]="dateDebut"
+                (ngModelChange)="applyFilters()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Au</label>
+              <input
+                type="date"
+                [(ngModel)]="dateFin"
+                (ngModelChange)="applyFilters()"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Message si aucun résultat -->
+      <div *ngIf="filteredPaiements.length === 0" class="text-center py-12 bg-white rounded-lg shadow-lg">
+        <i class="fas fa-receipt fa-4x text-gray-300 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Aucun paiement trouvé</h3>
+        <p class="text-gray-500 mb-4">Aucun paiement ne correspond à vos critères de recherche</p>
+        <button
+          (click)="resetFilters()"
+          class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+        >
+          <i class="fas fa-undo mr-2"></i>
+          Réinitialiser les filtres
+        </button>
+      </div>
+
+      <!-- Liste des paiements -->
+      <div *ngIf="filteredPaiements.length > 0" class="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Date
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Période
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Montant
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Valable jusqu'au
+                </th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Statut
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr *ngFor="let paiement of paginatedPaiements" class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="flex-shrink-0 h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center">
+                      <i class="fas fa-calendar-check text-indigo-600"></i>
+                    </div>
+                    <div class="ml-4">
+                      <div class="text-sm font-medium text-gray-900">
+                        {{ formatDateLong(paiement.date_paiement) }}
+                      </div>
+                      <div class="text-sm text-gray-500">
+                        Paiement effectué
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <i class="fas {{ getPeriodeIcon(paiement.periode) }} text-indigo-600 mr-2"></i>
+                    <span class="text-sm text-gray-900">{{ getPeriodeLibelle(paiement.periode) }}</span>
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-bold text-gray-900">{{ formatMontant(paiement.montant) }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ formatDate(paiement.date_fin) }}</div>
+                  <div class="text-xs text-gray-500">
+                    {{ paiement.periode === 'mensuel' ? '1 mois' : paiement.periode === 'trimestriel' ? '3 mois' : '1 an' }}
+                  </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span [class]="'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' + getStatutClass(paiement.statut)">
+                    {{ getStatutLibelle(paiement.statut) }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6" *ngIf="totalPages > 1">
+          <div class="flex-1 flex justify-between sm:hidden">
+            <button
+              (click)="pageChanged(currentPage - 1)"
+              [disabled]="currentPage === 1"
+              class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Précédent
+            </button>
+            <button
+              (click)="pageChanged(currentPage + 1)"
+              [disabled]="currentPage === totalPages"
+              class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Suivant
+            </button>
+          </div>
+          <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+            <div>
+              <p class="text-sm text-gray-700">
+                Affichage de
+                <span class="font-medium">{{ ((currentPage - 1) * itemsPerPage) + 1 }}</span>
+                à
+                <span class="font-medium">{{ plusPetitPaiement }}</span>
+                sur
+                <span class="font-medium">{{ filteredPaiements.length }}</span>
+                résultats
+              </p>
+            </div>
+            <div>
+              <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                <button
+                  (click)="pageChanged(1)"
+                  [disabled]="currentPage === 1"
+                  class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span class="sr-only">Premier</span>
+                  <i class="fas fa-angle-double-left"></i>
+                </button>
+                <button
+                  (click)="pageChanged(currentPage - 1)"
+                  [disabled]="currentPage === 1"
+                  class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span class="sr-only">Précédent</span>
+                  <i class="fas fa-angle-left"></i>
+                </button>
+                
+                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
+                  Page {{ currentPage }} / {{ totalPages }}
+                </span>
+                
+                <button
+                  (click)="pageChanged(currentPage + 1)"
+                  [disabled]="currentPage === totalPages"
+                  class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span class="sr-only">Suivant</span>
+                  <i class="fas fa-angle-right"></i>
+                </button>
+                <button
+                  (click)="pageChanged(totalPages)"
+                  [disabled]="currentPage === totalPages"
+                  class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span class="sr-only">Dernier</span>
+                  <i class="fas fa-angle-double-right"></i>
+                </button>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graphique d'évolution (optionnel) -->
+      <div class="mt-8 bg-white rounded-lg shadow-lg overflow-hidden" *ngIf="paiements.length > 0">
+        <div class="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <h3 class="text-lg font-medium text-gray-900">
+            <i class="fas fa-chart-bar mr-2 text-indigo-600"></i>
+            Évolution des paiements
+          </h3>
+        </div>
+        <div class="p-6">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="text-center p-4 bg-indigo-50 rounded-lg">
+              <p class="text-sm text-gray-600 mb-1">Plus gros paiement</p>
+              <p class="text-xl font-bold text-indigo-600">
+                {{ formatMontant(plusGrosPaiement) }}
+              </p>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded-lg">
+              <p class="text-sm text-gray-600 mb-1">Plus petit paiement</p>
+              <p class="text-xl font-bold text-green-600">
+                {{ formatMontant(plusPetitPaiement) }}
+              </p>
+            </div>
+            <div class="text-center p-4 bg-purple-50 rounded-lg">
+              <p class="text-sm text-gray-600 mb-1">Paiement moyen</p>
+              <p class="text-xl font-bold text-purple-600">
+                {{ formatMontant(moyenneParPaiement) }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

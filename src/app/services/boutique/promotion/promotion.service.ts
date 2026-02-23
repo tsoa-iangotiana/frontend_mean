@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
+import { BoutiqueContextService } from '../context/boutique.context.service';
 
 export interface Promotion {
   _id: string;
@@ -37,7 +38,7 @@ export interface UpdatePromotionProductsData {
 export class PromotionService {
   private apiUrl = `${environment.apiUrl}/promotion`;
 
-  constructor(private http: HttpClient) { }
+  constructor(private http: HttpClient, private boutiqueContext: BoutiqueContextService ) { }
 
   /**
    * Créer une promotion sur des produits
@@ -52,6 +53,14 @@ export class PromotionService {
    * GET /promotions
    */
   getPromotions(): Observable<Promotion[]> {
+    try{
+      const boutiqueId = this.boutiqueContext.getBoutiqueSelectionnee()?._id;
+      if(boutiqueId){
+        return this.http.get<Promotion[]>(this.apiUrl, { params: { boutiqueId } });
+      }
+    } catch(e) {
+      console.error("Erreur lors de la récupération des promotions", e);
+    }
     return this.http.get<Promotion[]>(this.apiUrl);
   }
 
