@@ -207,13 +207,13 @@ export class NavbarComponent implements OnInit, OnDestroy {
             icon: 'store',
             exact: false,
             children: [
-              { label: 'Mes Produits', route: '/boutique/produits', icon: 'box', exact: false },
-              {
-                label: 'Promotions',
-                route: boutiqueId ? `/boutique/promotions/${boutiqueId}` : '/boutique/promotions',
-                icon: 'percentage',
-                exact: false,
-              },
+              { label: 'Mes Produits', route: '/boutique/produits', icon: 'box', exact: true },
+              // {
+              //   label: 'Promotions',
+              //   route: boutiqueId ? `/boutique/promotions/${boutiqueId}` : '/boutique/promotions',
+              //   icon: 'percentage',
+              //   exact: false,
+              // },
             ],
           },
           {
@@ -238,7 +238,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
           }
         ]},
 
-          { label: 'Support', route: '/boutique/support', icon: 'headset', exact: false },
+          { label: 'Support', route: '/boutique/ticket', icon: 'headset', exact: false },
         ];
         break;
 
