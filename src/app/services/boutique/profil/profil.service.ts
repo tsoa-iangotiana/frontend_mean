@@ -15,9 +15,11 @@ export interface Boutique {
   responsable?: string;
   active?: boolean;
   categories: Categorie[];
-  note_moyenne?: number;
+  note_moyenne?: number;  // Note moyenne calculée par le backend
   createdAt?: Date;
   updatedAt?: Date;
+  userNote?: number;      // Note donnée par l'utilisateur connecté
+  estFavoris?: boolean;
 }
 
 export interface Categorie {

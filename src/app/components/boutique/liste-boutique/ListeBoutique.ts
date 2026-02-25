@@ -1,9 +1,12 @@
-import { User } from './../../../services/auth';
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { ProfilService, Boutique } from '../../../services/boutique/profil/profil.service';
+import { Note, NoteResponse, MaNoteResponse } from '../../../services/boutique/note/note.service';
+import { Favoris } from '../../../services/acheteur/favoris/favoris.service';
+import { AuthService } from '../../../services/auth';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-liste-boutique',
@@ -12,7 +15,7 @@ import { ProfilService, Boutique } from '../../../services/boutique/profil/profi
   templateUrl: './ListeBoutique.html',
   styleUrls: ['./liste-boutique.css']
 })
-export class ListeBoutique implements OnInit {
+export class ListeBoutique implements OnInit, OnDestroy {
   boutiques: Boutique[] = [];
   filteredBoutiques: Boutique[] = [];
   loading = false;
@@ -27,11 +30,10 @@ export class ListeBoutique implements OnInit {
   // Filtres
   searchTerm = '';
   selectedCategory = '';
-  activeFilter: boolean | null = null;
   sortBy: 'nom' | 'note' | 'date' = 'date';
   sortOrder: 'asc' | 'desc' = 'desc';
 
-  // Catégories disponibles (à charger depuis le service)
+  // Catégories disponibles
   categories: string[] = [];
 
   // Statistiques
@@ -41,45 +43,127 @@ export class ListeBoutique implements OnInit {
     inactives: 0
   };
 
+  // État de notation pour chaque boutique
+  ratingInProgress: Set<string> = new Set();
+
+  // État des favoris pour chaque boutique
+  favoritesInProgress: Set<string> = new Set();
+
+  // Utilisateur connecté
+  currentUser: any = null;
+  private authSubscription: Subscription | null = null;
+
+  // Gestion des favoris
+  private favorites: Set<string> = new Set();
+
   constructor(
     private profilService: ProfilService,
-    private cdr: ChangeDetectorRef) {}
+    private noteService: Note,
+    private favorisService: Favoris,
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit(): void {
-    this.loadBoutiques();
+    // S'abonner aux changements de l'utilisateur connecté
+    this.authSubscription = this.authService.currentUser$.subscribe((user) => {
+      this.currentUser = user;
+      // Recharger les boutiques quand l'utilisateur change
+      this.loadBoutiques();
+    });
   }
 
-  loadBoutiques(): void {
+  ngOnDestroy(): void {
+    // Se désabonner pour éviter les fuites mémoire
+    if (this.authSubscription) {
+      this.authSubscription.unsubscribe();
+    }
+  }
+
+  async loadBoutiques(): Promise<void> {
     this.loading = true;
     this.error = null;
 
-    this.profilService.getAllBoutiques().subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.boutiques = response.boutiques;
-          this.totalItems = response.totalBoutiques || this.boutiques.length;
-          this.totalPages = response.totalPages || 1;
+    try {
+      const response = await this.profilService.getAllBoutiques().toPromise();
 
-          this.calculateStats();
-          this.extractCategories();
-          this.applyFilters();
+      // Vérifier que response existe et a la propriété success
+      if (response && 'success' in response && response.success) {
+        // Filtrer les boutiques actives
+        this.boutiques = (response.boutiques || []).filter((b: Boutique) => b?.active === true);
+
+        // Charger les notes de l'utilisateur pour chaque boutique (si connecté)
+        if (this.currentUser) {
+          await this.loadUserNotesForBoutiques();
+          await this.loadFavoritesForBoutiques();
         }
-        this.loading = false;
-        this.cdr.detectChanges(); // Force la détection des changements
-      },
-      error: (err) => {
-        console.error('Erreur lors du chargement des boutiques:', err);
-        this.error = 'Impossible de charger la liste des boutiques';
-        this.loading = false;
+
+        this.totalItems = this.boutiques.length;
+        this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+
+        this.calculateStats();
+        this.extractCategories();
+        this.applyFilters();
+      } else {
+        this.error = 'Format de réponse invalide';
+      }
+    } catch (err) {
+      console.error('Erreur lors du chargement des boutiques:', err);
+      this.error = 'Impossible de charger la liste des boutiques';
+    } finally {
+      this.loading = false;
+      this.cdr.detectChanges();
+    }
+  }
+
+  async loadUserNotesForBoutiques(): Promise<void> {
+    if (!this.currentUser || this.boutiques.length === 0) return;
+
+    // Charger la note de l'utilisateur pour chaque boutique
+    const promises = this.boutiques.map(async (boutique) => {
+      if (boutique._id) {
+        try {
+          const response = await this.noteService.getMaNote('BOUTIQUE', boutique._id).toPromise();
+          if (response && 'a_note' in response) {
+            if (response.a_note && response.note !== null && response.note !== undefined) {
+              boutique.userNote = response.note;
+            } else {
+              boutique.userNote = undefined;
+            }
+          }
+        } catch (error) {
+          console.error(`Erreur chargement note boutique ${boutique._id}:`, error);
+          boutique.userNote = undefined;
+        }
       }
     });
+
+    await Promise.all(promises);
+  }
+
+  async loadFavoritesForBoutiques(): Promise<void> {
+    if (!this.currentUser || this.boutiques.length === 0) return;
+
+    const promises = this.boutiques.map(async (boutique) => {
+      if (boutique._id) {
+        try {
+          const response = await this.favorisService.checkBoutiqueFavoris(boutique._id).toPromise();
+          boutique.estFavoris = response?.estFavoris || false;
+        } catch (error) {
+          console.error(`Erreur chargement favoris boutique ${boutique._id}:`, error);
+          boutique.estFavoris = false;
+        }
+      }
+    });
+
+    await Promise.all(promises);
   }
 
   calculateStats(): void {
     this.stats = {
       total: this.boutiques.length,
-      actives: this.boutiques.filter(b => b.active).length,
-      inactives: this.boutiques.filter(b => !b.active).length
+      actives: this.boutiques.filter(b => b?.active).length,
+      inactives: this.boutiques.filter(b => !b?.active).length
     };
   }
 
@@ -87,7 +171,7 @@ export class ListeBoutique implements OnInit {
     const categorySet = new Set<string>();
     this.boutiques.forEach(boutique => {
       boutique.categories?.forEach(cat => {
-        if (cat.valide) {
+        if (cat?.valide && cat?.nom) {
           categorySet.add(cat.nom);
         }
       });
@@ -102,22 +186,17 @@ export class ListeBoutique implements OnInit {
     if (this.searchTerm) {
       const term = this.searchTerm.toLowerCase();
       filtered = filtered.filter(b =>
-        b.nom.toLowerCase().includes(term) ||
-        b.slogan?.toLowerCase().includes(term) ||
-        b.description?.toLowerCase().includes(term)
+        (b.nom?.toLowerCase().includes(term)) ||
+        (b.slogan?.toLowerCase().includes(term)) ||
+        (b.description?.toLowerCase().includes(term))
       );
     }
 
     // Filtre par catégorie
     if (this.selectedCategory) {
       filtered = filtered.filter(b =>
-        b.categories?.some(cat => cat.nom === this.selectedCategory && cat.valide)
+        b.categories?.some(cat => cat?.nom === this.selectedCategory && cat?.valide)
       );
-    }
-
-    // Filtre par statut
-    if (this.activeFilter !== null) {
-      filtered = filtered.filter(b => b.active === this.activeFilter);
     }
 
     // Tri
@@ -126,13 +205,18 @@ export class ListeBoutique implements OnInit {
 
       switch (this.sortBy) {
         case 'nom':
-          comparison = a.nom.localeCompare(b.nom);
+          comparison = (a.nom || '').localeCompare(b.nom || '');
           break;
         case 'note':
-          comparison = (b.note_moyenne || 0) - (a.note_moyenne || 0);
+          // Priorité à la note moyenne de la boutique
+          const noteA = a.note_moyenne || 0;
+          const noteB = b.note_moyenne || 0;
+          comparison = noteB - noteA;
           break;
         case 'date':
-          comparison = new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+          comparison = dateB - dateA;
           break;
       }
 
@@ -142,7 +226,7 @@ export class ListeBoutique implements OnInit {
     this.filteredBoutiques = filtered;
     this.totalItems = filtered.length;
     this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
-    this.currentPage = 1; // Reset à la première page lors du filtrage
+    this.currentPage = 1;
   }
 
   get paginatedBoutiques(): Boutique[] {
@@ -161,7 +245,6 @@ export class ListeBoutique implements OnInit {
   resetFilters(): void {
     this.searchTerm = '';
     this.selectedCategory = '';
-    this.activeFilter = null;
     this.sortBy = 'date';
     this.sortOrder = 'desc';
     this.applyFilters();
@@ -179,35 +262,134 @@ export class ListeBoutique implements OnInit {
 
   getBoxInfo(boutique: Boutique): string {
     if (!boutique.box) return 'Non assigné';
-    return `Box ${boutique.box.numero} - ${boutique.box.surface}m²`;
+    if (typeof boutique.box === 'object' && boutique.box.numero && boutique.box.surface) {
+      return `Box ${boutique.box.numero} - ${boutique.box.surface}m²`;
+    }
+    return 'Box assigné';
   }
 
-  getResponsableName(boutique: Boutique): string {
-    if (!boutique.responsable) return 'Non assigné';
-    // Si responsable est un objet avec prénom/nom
-    if (typeof boutique.responsable === 'object') {
-      return `${boutique.responsable || ''} ${boutique.responsable|| ''}`.trim() || 'Responsable';
+  getFirstContact(boutique: Boutique): string {
+    if (!boutique.contact || boutique.contact.length === 0) {
+      return 'Aucun contact';
     }
-    return 'Responsable';
+    const contact = boutique.contact[0];
+    return contact?.length > 20 ? contact.substring(0, 20) + '...' : contact || 'Contact';
   }
 
   getCategoryNames(boutique: Boutique): string[] {
     return boutique.categories
-      ?.filter(cat => cat.valide)
-      .map(cat => cat.nom) || [];
+      ?.filter(cat => cat?.valide)
+      .map(cat => cat?.nom)
+      .filter((nom): nom is string => !!nom) || [];
   }
 
-  getStars(note: number = 0): number[] {
-    return [1, 2, 3, 4, 5];
+  // Gestion des notes avec le vrai service
+  async rateBoutique(boutique: Boutique, note: number): Promise<void> {
+    if (!boutique._id) return;
+
+    // Vérifier si l'utilisateur est connecté
+    if (!this.currentUser) {
+      this.redirectToLogin();
+      return;
+    }
+
+    // Empêcher les clics multiples
+    if (this.ratingInProgress.has(boutique._id)) return;
+    this.ratingInProgress.add(boutique._id);
+
+    try {
+      const response = await this.noteService.noterBoutique(boutique._id, note).toPromise();
+
+      if (response) {
+        // Mettre à jour la note utilisateur (pour l'affichage des étoiles)
+        boutique.userNote = note;
+
+        // Mettre à jour la note moyenne avec celle retournée par le serveur
+        if (response.statistiques?.moyenne !== undefined) {
+          boutique.note_moyenne = response.statistiques.moyenne;
+        }
+
+        console.log(response.message || 'Note enregistrée');
+
+        // Forcer la détection de changements
+        this.cdr.detectChanges();
+
+        // Réappliquer les filtres pour le tri
+        this.applyFilters();
+      }
+    } catch (error: any) {
+      console.error('Erreur lors de la notation:', error);
+
+      // Gérer les erreurs spécifiques
+      if (error.status === 401) {
+        this.redirectToLogin();
+      } else {
+        alert(error.error?.message || 'Erreur lors de la notation');
+      }
+    } finally {
+      this.ratingInProgress.delete(boutique._id);
+      // 👇 FORCER LA DÉTECTION APRÈS LA MISE À JOUR
+      this.cdr.detectChanges();
+    }
   }
 
-  formatDate(date: Date | undefined): string {
-    if (!date) return '';
-    return new Date(date).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+  redirectToLogin(): void {
+    // Sauvegarder l'URL actuelle pour rediriger après connexion
+    localStorage.setItem('redirectAfterLogin', window.location.pathname);
+    window.location.href = '/login';
+  }
+
+  // Gestion des favoris
+  // Gestion des favoris
+  async toggleFavorite(boutique: Boutique): Promise<void> {
+    if (!boutique._id) return;
+
+    if (!this.currentUser) {
+      this.redirectToLogin();
+      return;
+    }
+
+    if (this.favoritesInProgress.has(boutique._id)) return;
+    this.favoritesInProgress.add(boutique._id);
+
+    // Sauvegarder l'état précédent pour restauration en cas d'erreur
+    const etatPrecedent = boutique.estFavoris;
+
+    // Mise à jour optimiste de l'UI
+    boutique.estFavoris = !boutique.estFavoris;
+
+    try {
+      const response = await this.favorisService.toggleBoutiqueFavoris(boutique._id).toPromise();
+
+      if (response?.success) {
+        console.log(response.message);
+        // L'état est déjà mis à jour, on garde la valeur actuelle
+      } else {
+        // Restaurer l'état précédent en cas d'échec
+        boutique.estFavoris = etatPrecedent;
+      }
+    } catch (error: any) {
+      console.error('Erreur lors de la modification des favoris:', error);
+      // Restaurer l'état précédent
+      boutique.estFavoris = etatPrecedent;
+
+      if (error.status === 401) {
+        this.redirectToLogin();
+      } else {
+        alert(error.error?.message || 'Erreur lors de la modification des favoris');
+      }
+    } finally {
+      this.favoritesInProgress.delete(boutique._id);
+      this.cdr.detectChanges();
+    }
+  }
+
+  isFavorite(boutique: Boutique): boolean {
+    return boutique.estFavoris || false;
+  }
+
+  isFavoriteInProgress(boutiqueId: string | undefined): boolean {
+    return boutiqueId ? this.favoritesInProgress.has(boutiqueId) : false;
   }
 
   Math = Math;

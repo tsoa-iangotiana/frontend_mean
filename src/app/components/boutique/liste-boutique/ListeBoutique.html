@@ -7,14 +7,6 @@
         <span class="stat-value">{{stats.total}}</span>
         <span class="stat-label">Total</span>
       </div>
-      <div class="stat-card active">
-        <span class="stat-value">{{stats.actives}}</span>
-        <span class="stat-label">Actives</span>
-      </div>
-      <div class="stat-card inactive">
-        <span class="stat-value">{{stats.inactives}}</span>
-        <span class="stat-label">Inactives</span>
-      </div>
     </div>
   </div>
 
@@ -42,16 +34,6 @@
       >
         <option value="">Toutes catégories</option>
         <option *ngFor="let cat of categories" [value]="cat">{{cat}}</option>
-      </select>
-
-      <select
-        [(ngModel)]="activeFilter"
-        (ngModelChange)="applyFilters()"
-        class="filter-select"
-      >
-        <option [ngValue]="null">Tous statuts</option>
-        <option [ngValue]="true">Actives</option>
-        <option [ngValue]="false">Inactives</option>
       </select>
     </div>
 
@@ -94,7 +76,7 @@
         </i>
       </button>
 
-      <button (click)="resetFilters()" class="reset-filters-btn" *ngIf="searchTerm || selectedCategory || activeFilter !== null">
+      <button (click)="resetFilters()" class="reset-filters-btn" *ngIf="searchTerm || selectedCategory">
         <i class="fas fa-redo-alt"></i> Réinitialiser
       </button>
     </div>
@@ -118,17 +100,26 @@
   <!-- Grille des boutiques -->
   <div *ngIf="!loading && !error" class="boutiques-grid">
     <div *ngFor="let boutique of paginatedBoutiques" class="boutique-card">
-      <!-- En-tête de la carte avec image/avatar -->
-      <div class="card-header" [class.inactive]="!boutique.active">
+      <!-- En-tête de la carte avec image/avatar et favori -->
+      <div class="card-header">
         <div class="boutique-avatar">
           <img *ngIf="boutique.profil_photo" [src]="boutique.profil_photo" [alt]="boutique.nom">
           <div *ngIf="!boutique.profil_photo" class="avatar-placeholder">
             {{boutique.nom.charAt(0).toUpperCase()}}
           </div>
         </div>
-        <div class="boutique-status">
-          <span class="status-badge" [class.active]="boutique.active" [class.inactive]="!boutique.active">
-            {{boutique.active ? 'Active' : 'Inactive'}}
+        <div class="boutique-actions">
+         <button
+            class="favorite-btn"
+            [class.active]="isFavorite(boutique)"
+            [class.disabled]="isFavoriteInProgress(boutique._id)"
+            (click)="toggleFavorite(boutique)"
+            [disabled]="isFavoriteInProgress(boutique._id)"
+          >
+            <i class="fas fa-heart"></i>
+          </button>
+          <span class="status-badge active">
+            Active
           </span>
         </div>
       </div>
@@ -139,15 +130,21 @@
 
         <p *ngIf="boutique.slogan" class="boutique-slogan">"{{boutique.slogan}}"</p>
 
+        <!-- Système de notation interactif -->
         <div class="boutique-note">
-          <div class="stars">
-            <i *ngFor="let star of getStars(boutique.note_moyenne)"
-               class="fas fa-star"
-               [class.filled]="star <= Math.floor(boutique.note_moyenne || 0)"
-               [class.half]="star === Math.ceil(boutique.note_moyenne || 0)">
+          <div class="stars-interactive">
+            <i *ngFor="let star of [1,2,3,4,5]"
+              class="fas fa-star"
+              [class.filled]="star <= (boutique.userNote || 0)"
+              (click)="rateBoutique(boutique, star)"
+              [class.pointer]="currentUser"
+              [class.disabled]="boutique._id && ratingInProgress.has(boutique._id)">
             </i>
           </div>
-          <span class="note-value">{{boutique.note_moyenne?.toFixed(1) || '0.0'}}</span>
+          <span class="note-value">
+            {{boutique.userNote || boutique.note_moyenne || 0}}
+            <span class="note-separator">/5</span>
+          </span>
         </div>
 
         <div class="boutique-details">
@@ -156,14 +153,10 @@
             <span>{{getBoxInfo(boutique)}}</span>
           </div>
 
-          <div class="detail-item">
-            <i class="fas fa-user"></i>
-            <span>{{getResponsableName(boutique)}}</span>
-          </div>
-
-          <div class="detail-item">
-            <i class="fas fa-calendar"></i>
-            <span>Créée le {{formatDate(boutique.createdAt)}}</span>
+          <!-- Contacts -->
+          <div class="detail-item" *ngIf="boutique.contact && boutique.contact.length > 0">
+            <i class="fas fa-phone"></i>
+            <span>{{getFirstContact(boutique)}}</span>
           </div>
         </div>
 
@@ -185,11 +178,8 @@
 
       <!-- Pied de carte avec actions -->
       <div class="card-footer">
-        <button class="btn-view" [routerLink]="['/boutique', boutique._id]">
-          <i class="fas fa-eye"></i> Voir détails
-        </button>
-        <button *ngIf="boutique.contact?.length" class="btn-contact">
-          <i class="fas fa-envelope"></i> Contacter
+        <button class="btn-view" [routerLink]="['/acheteur', boutique._id, 'produits']">
+          <i class="fas fa-box"></i> Voir produits
         </button>
       </div>
     </div>
@@ -199,12 +189,12 @@
   <div *ngIf="!loading && !error && filteredBoutiques.length === 0" class="empty-state">
     <i class="fas fa-store-alt"></i>
     <h3>Aucune boutique trouvée</h3>
-    <p *ngIf="searchTerm || selectedCategory || activeFilter !== null">
+    <p *ngIf="searchTerm || selectedCategory">
       Aucune boutique ne correspond à vos critères de recherche.
       <button (click)="resetFilters()" class="link-btn">Réinitialiser les filtres</button>
     </p>
-    <p *ngIf="!searchTerm && !selectedCategory && activeFilter === null">
-      Aucune boutique n'est disponible pour le moment.
+    <p *ngIf="!searchTerm && !selectedCategory">
+      Aucune boutique active n'est disponible pour le moment.
     </p>
   </div>
 
@@ -242,6 +232,6 @@
   <div *ngIf="!loading && !error && filteredBoutiques.length > 0" class="items-info">
     Affichage {{(currentPage - 1) * itemsPerPage + 1}} -
     {{Math.min(currentPage * itemsPerPage, totalItems)}}
-    sur {{totalItems}} boutiques
+    sur {{totalItems}} boutiques actives
   </div>
 </div>
