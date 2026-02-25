@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
@@ -93,7 +93,30 @@ export class ProfilService {
   }
 
   //recuperer tous les boutiques
-  getAllBoutiques(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/all`);
+  getAllBoutiques(filters?: { active?: boolean; search?: string; page?: number; limit?: number }): Observable<any> {
+    let params = new HttpParams();
+    
+    if (filters) {
+      if (filters.active !== undefined) {
+        params = params.set('active', filters.active.toString());
+      }
+      if (filters.search) {
+        params = params.set('search', filters.search);
+      }
+      if (filters.page) {
+        params = params.set('page', filters.page.toString());
+      }
+      if (filters.limit) {
+        params = params.set('limit', filters.limit.toString());
+      }
+    }
+
+    // 👉 Important: passer les params dans la requête
+    return this.http.get(`${this.apiUrl}/all`, { params });
+  }
+
+  // Ou version simplifiée si vous voulez juste les boutiques actives
+  getBoutiquesActives(limit: number = 100): Observable<any> {
+    return this.getAllBoutiques({ active: true, limit });
   }
 }

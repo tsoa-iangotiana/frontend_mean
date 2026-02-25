@@ -14,6 +14,7 @@ import { HistoriqueLoyerComponent } from './components/boutique/paiement/histori
 import { ListeBoutique } from './components/boutique/liste-boutique/ListeBoutique';
 import { ListeProduitsAcheteurComponent } from './components/acheteur/liste-produits/liste-produits';
 import { TicketsComponent } from './components/boutique/ticket/ticket.component';
+import { BoxManagementComponent } from './components/admin/box/box-management.component';
 export const routes: Routes = [
     {path : 'inscription/:role', component : Inscription},
     {path : 'articles', component : ArticleList, canActivate: [authGuard]},
@@ -28,7 +29,7 @@ export const routes: Routes = [
 
     {path: 'acheteur/:boutiqueId/produits', component: ListeProduitsAcheteurComponent },
     {path:'boutique/ticket', component: TicketsComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
-
+    {path: 'admin/clients',component: BoxManagementComponent, canActivate: [authGuard]},
     //      {
 //     path: 'admin',
 //     loadComponent: () => import('./components/admin/admin.component')
