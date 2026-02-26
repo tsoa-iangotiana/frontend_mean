@@ -12,7 +12,14 @@ import { BoutiqueSelectionneeGuard } from './guards/boutique-selectionne.guard';
 import { PayerLoyerComponent } from './components/boutique/paiement/payer-loyer.component';
 import { HistoriqueLoyerComponent } from './components/boutique/paiement/historique-loyer.component';
 import { ListeBoutique } from './components/boutique/liste-boutique/ListeBoutique';
-import { TicketsComponent } from './components/boutique/ticket/ticket.component';
+import { ListeProduitsAcheteurComponent } from './components/acheteur/liste-produits/liste-produits';
+import { TicketComponent } from './components/boutique/ticket/ticket.component';
+import { TicketManagementComponent } from './components/admin/ticket/ticket-management.component';
+import { BoxManagementComponent } from './components/admin/box/box-management.component';
+import { BoutiqueManagementComponent } from './components/admin/boutique/boutique-management.component';
+import { DashboardComponent } from './components/admin/dashboard/dashboard.component';
+import path from 'path';
+import { CategorieComponent } from './components/admin/categorie/categorie.component';
 export const routes: Routes = [
     {path : 'inscription/:role', component : Inscription},
     {path : 'articles', component : ArticleList, canActivate: [authGuard]},
@@ -24,7 +31,13 @@ export const routes: Routes = [
     {path: 'boutique/loyer',component : PayerLoyerComponent, canActivate: [authGuard, BoutiqueSelectionneeGuard]},
     {path:'boutique/historique-paiement', component:HistoriqueLoyerComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
     {path:'boutique/all', component:ListeBoutique },
-    {path:'boutique/ticket', component: TicketsComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path:'admin/boutique', component:BoutiqueManagementComponent, canActivate: [authGuard]},
+    {path:'admin/tickets', component:TicketManagementComponent, canActivate: [authGuard]},
+    {path:'admin/dashboard', component:DashboardComponent, canActivate: [authGuard]},
+    {path: 'admin/categories', component: CategorieComponent, canActivate: [authGuard]},
+    {path: 'acheteur/:boutiqueId/produits', component: ListeProduitsAcheteurComponent },
+    {path:'boutique/ticket', component: TicketComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path: 'admin/clients',component: BoxManagementComponent, canActivate: [authGuard]},
     //      {
 //     path: 'admin',
 //     loadComponent: () => import('./components/admin/admin.component')

@@ -1,0 +1,340 @@
+/* Styles généraux */
+.container-fluid {
+  background-color: #f8f9fc;
+  min-height: 100vh;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.page-title {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1.75rem;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.page-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 4px;
+  background: linear-gradient(90deg, #4e73df, #36b9cc);
+  border-radius: 2px;
+}
+
+/* Cartes de statistiques */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 1rem;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  border: 1px solid #e3e6f0;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.stat-card.total { border-left: 4px solid #4e73df; }
+.stat-card.ouvert { border-left: 4px solid #f6c23e; }
+.stat-card.en-cours { border-left: 4px solid #36b9cc; }
+.stat-card.resolu { border-left: 4px solid #1cc88a; }
+.stat-card.urgent { border-left: 4px solid #e74a3b; }
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+.stat-card.total .stat-icon { background: #eef2ff; color: #4e73df; }
+.stat-card.ouvert .stat-icon { background: #fff3e0; color: #f6c23e; }
+.stat-card.en-cours .stat-icon { background: #e0f2fe; color: #36b9cc; }
+.stat-card.resolu .stat-icon { background: #e0f7e6; color: #1cc88a; }
+.stat-card.urgent .stat-icon { background: #fee9e7; color: #e74a3b; }
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: #858796;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.2;
+}
+
+/* Filtres */
+.filters-card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.filters-card .card-header {
+  background: white;
+  border-bottom: 1px solid #e3e6f0;
+  padding: 1rem 1.25rem;
+}
+
+/* Tableau */
+.table {
+  margin: 0;
+}
+
+.table thead th {
+  background: #f8f9fc;
+  color: #4e73df;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #e3e6f0;
+  padding: 1rem;
+}
+
+.table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fc;
+}
+
+.table tbody td {
+  padding: 1rem;
+  vertical-align: middle;
+  color: #2c3e50;
+}
+
+.ticket-subject {
+  font-weight: 500;
+  max-width: 250px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Badges */
+.badge {
+  padding: 0.5rem 0.75rem;
+  font-weight: 500;
+  font-size: 0.75rem;
+  border-radius: 20px;
+}
+
+/* Boutons d'action */
+.btn-group .btn {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.btn-outline-info, .btn-outline-warning, .btn-outline-success, 
+.btn-outline-secondary, .btn-outline-danger {
+  border: 1px solid #e3e6f0;
+}
+
+.btn-outline-info:hover { background: #4e73df; color: white; }
+.btn-outline-warning:hover { background: #f6c23e; color: white; }
+.btn-outline-success:hover { background: #1cc88a; color: white; }
+.btn-outline-secondary:hover { background: #858796; color: white; }
+.btn-outline-danger:hover { background: #e74a3b; color: white; }
+
+/* Pagination */
+.pagination {
+  margin: 0;
+}
+
+.page-link {
+  border: none;
+  padding: 0.5rem 1rem;
+  color: #4e73df;
+  background: white;
+  margin: 0 2px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.page-link:hover {
+  background: #eef2ff;
+  color: #4e73df;
+}
+
+.page-item.active .page-link {
+  background: #4e73df;
+  color: white;
+}
+
+.page-item.disabled .page-link {
+  color: #b7b9cc;
+  cursor: not-allowed;
+}
+
+/* Modals */
+.modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1.25rem;
+}
+
+.modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.modal-title {
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  border-top: 1px solid #e3e6f0;
+  padding: 1rem 1.5rem;
+}
+
+/* Commentaires */
+.comments-section {
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.comments-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.comments-section::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.comments-section::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+.comments-section::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.comment-item {
+  transition: all 0.2s ease;
+  border: 1px solid #e3e6f0;
+}
+
+.comment-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.comment-item.admin-comment {
+  background-color: #eef2ff;
+}
+
+.comment-item.boutique-comment {
+  background-color: #f0f9ff;
+}
+
+.comment-item.system-comment {
+  background-color: #f8f9fa;
+  font-style: italic;
+}
+
+.comment-avatar .avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  background: white;
+  border: 1px solid #e3e6f0;
+}
+
+/* Infos ticket dans modal */
+.info-label {
+  font-size: 0.85rem;
+  color: #858796;
+  margin-bottom: 0.25rem;
+}
+
+.info-value {
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.info-value.subject {
+  font-size: 1.1rem;
+}
+
+.info-value.description {
+  white-space: pre-line;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .table-responsive {
+    font-size: 0.85rem;
+  }
+  
+  .btn-group {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .modal-body {
+    max-height: 60vh;
+  }
+}
+
+/* Animations */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ticket-card {
+  animation: slideIn 0.3s ease;
+}

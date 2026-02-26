@@ -171,8 +171,8 @@
                 </button>
                 
                 <!-- Actions selon statut -->
-                <ng-container [ngSwitch]="ticket.statut">
-                  <button *ngSwitchCase="'OUVERT'" class="btn btn-sm btn-outline-warning" 
+                 <ng-container [ngSwitch]="ticket.statut">
+                  <!-- <button *ngSwitchCase="'OUVERT'" class="btn btn-sm btn-outline-warning" 
                           (click)="updateStatus(ticket, 'EN_COURS')" title="Prendre en charge">
                     <i class="fas fa-hand-paper"></i>
                   </button>
@@ -180,12 +180,12 @@
                   <button *ngSwitchCase="'EN_COURS'" class="btn btn-sm btn-outline-success" 
                           (click)="resolveTicket(ticket)" title="Marquer comme résolu">
                     <i class="fas fa-check"></i>
-                  </button>
+                  </button> --> 
                   
-                  <button *ngSwitchCase="'RESOLU'" class="btn btn-sm btn-outline-secondary" 
-                          (click)="reopenTicket(ticket)" title="Rouvrir">
-                    <i class="fas fa-redo-alt"></i>
-                  </button>
+                 <button *ngSwitchCase="'RESOLU'" class="btn btn-sm btn-outline-secondary" 
+                  (click)="openReopenModal(ticket)" title="Rouvrir">
+                  <i class="fas fa-redo-alt"></i>
+                </button>
                 </ng-container>
 
                 <!-- Actions priorité -->
@@ -193,14 +193,14 @@
                   <button class="btn btn-sm btn-outline-secondary" ngbDropdownToggle>
                     <i class="fas fa-flag"></i> Priorité
                   </button>
-                    <div ngbDropdownMenu>
+                  <div ngbDropdownMenu>
                     <button *ngFor="let p of priorites" ngbDropdownItem 
                             (click)="updatePriorityFromString(ticket, p)"
                             [class.active]="ticket.priorite === p">
-                        <i class="fas {{ getPriorityIcon(p) }} me-2"></i>
-                        {{ getPriorityLabel(p) }}
+                      <i class="fas {{ getPriorityIcon(p) }} me-2"></i>
+                      {{ getPriorityLabel(p) }}
                     </button>
-                    </div>
+                  </div>
                 </div>
 
                 <!-- Bouton suppression -->
@@ -246,6 +246,10 @@
   </div>
 </div>
 
+<!-- ===== MODALS ===== -->
+
+<!-- ===== MODALS ===== -->
+
 <!-- Modal de création de ticket -->
 <ng-template #createTicketModal let-modal>
   <div class="modal-header">
@@ -258,7 +262,6 @@
   
   <div class="modal-body">
     <form [formGroup]="ticketForm">
-      <!-- Sujet -->
       <div class="mb-3">
         <label class="form-label">Sujet <span class="text-danger">*</span></label>
         <input
@@ -275,7 +278,6 @@
         </div>
       </div>
 
-      <!-- Description -->
       <div class="mb-3">
         <label class="form-label">Description <span class="text-danger">*</span></label>
         <textarea
@@ -292,7 +294,6 @@
         </div>
       </div>
 
-      <!-- Priorité -->
       <div class="mb-3">
         <label class="form-label">Priorité <span class="text-danger">*</span></label>
         <select class="form-select" formControlName="priorite">
@@ -326,19 +327,19 @@
   <div class="modal-header" *ngIf="selectedTicket">
     <h5 class="modal-title">
       <i class="fas fa-ticket-alt me-2"></i>
-      Détails du ticket
+      Détails du ticket #{{ selectedTicket._id | slice:-6 }}
     </h5>
     <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
   </div>
   
   <div class="modal-body" *ngIf="selectedTicket">
     <div class="ticket-details">
-      <div class="detail-row">
+      <div class="detail-row mb-2">
         <strong>Sujet:</strong>
         <span>{{ selectedTicket.sujet }}</span>
       </div>
       
-      <div class="detail-row">
+      <div class="detail-row mb-2">
         <strong>Statut:</strong>
         <span class="badge" [ngClass]="getStatusBadgeClass(selectedTicket.statut)">
           <i class="fas {{ getStatusIcon(selectedTicket.statut) }} me-1"></i>
@@ -346,7 +347,7 @@
         </span>
       </div>
       
-      <div class="detail-row">
+      <div class="detail-row mb-2">
         <strong>Priorité:</strong>
         <span class="badge" [ngClass]="getPriorityBadgeClass(selectedTicket.priorite)">
           <i class="fas {{ getPriorityIcon(selectedTicket.priorite) }} me-1"></i>
@@ -354,12 +355,12 @@
         </span>
       </div>
       
-      <div class="detail-row">
+      <div class="detail-row mb-2">
         <strong>Date de création:</strong>
         <span>{{ selectedTicket.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
       </div>
       
-      <div class="detail-row" *ngIf="selectedTicket.resolvedAt">
+      <div class="detail-row mb-3" *ngIf="selectedTicket.resolvedAt">
         <strong>Date de résolution:</strong>
         <span>{{ selectedTicket.resolvedAt | date:'dd/MM/yyyy HH:mm' }}</span>
       </div>
@@ -368,12 +369,160 @@
         <strong>Description:</strong>
         <p class="mt-2 p-3 bg-light rounded">{{ selectedTicket.description }}</p>
       </div>
+
+      <!-- SECTION COMMENTAIRES -->
+      <div class="comments-section mt-4">
+        <hr>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0">
+            <i class="fas fa-comments me-2"></i>
+            Commentaires ({{ commentaires.length }})
+          </h6>
+          <button class="btn btn-sm btn-outline-primary" (click)="openCommentModal(selectedTicket)">
+            <i class="fas fa-plus me-1"></i>
+            Ajouter un commentaire
+          </button>
+        </div>
+
+        <div class="text-center py-3" *ngIf="loadingComments">
+          <div class="spinner-border spinner-border-sm text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+          </div>
+          <p class="small text-muted mt-2">Chargement des commentaires...</p>
+        </div>
+
+        <div class="comments-list" *ngIf="!loadingComments">
+          <div *ngIf="commentaires.length === 0" class="text-center py-4 bg-light rounded">
+            <i class="fas fa-comment-dots fa-2x text-muted mb-2"></i>
+            <p class="text-muted mb-0">Aucun commentaire pour le moment</p>
+            <small>Soyez le premier à commenter</small>
+          </div>
+
+          <div *ngFor="let comment of commentaires" class="comment-item mb-3 p-3 rounded" 
+               [ngClass]="getAuteurClass(comment)">
+            <div class="d-flex align-items-start">
+              <div class="comment-avatar me-2">
+                <span class="avatar-circle">{{ getAuteurAvatar(comment) }}</span>
+              </div>
+              <div class="comment-content flex-grow-1">
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>{{ getAuteurNom(comment) }}</strong>
+                  <small class="text-muted">
+                    <i class="far fa-clock me-1"></i>
+                    {{ comment.date | date:'dd/MM/yyyy HH:mm' }}
+                  </small>
+                </div>
+                <p class="mb-0 mt-2">{{ comment.texte }}</p>
+                <small class="text-muted" *ngIf="comment.type !== 'commentaire'">
+                  <i class="fas fa-info-circle me-1"></i>
+                  {{ comment.type === 'resolution' ? 'Action de résolution' : 'Réouverture' }}
+                </small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="modal-footer">
     <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
       Fermer
+    </button>
+  </div>
+</ng-template>
+
+<!-- Modal de commentaire -->
+<ng-template #commentModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="fas fa-comment me-2"></i>
+      Ajouter un commentaire
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  
+  <div class="modal-body">
+    <form [formGroup]="commentForm">
+      <div class="mb-3">
+        <label class="form-label">Votre commentaire</label>
+        <textarea
+          class="form-control"
+          rows="4"
+          formControlName="texte"
+          placeholder="Écrivez votre message ici..."
+          [class.is-invalid]="commentForm.get('texte')?.invalid && commentForm.get('texte')?.touched">
+        </textarea>
+        <div class="invalid-feedback" *ngIf="commentForm.get('texte')?.errors?.['required']">
+          Le commentaire est requis
+        </div>
+        <div class="invalid-feedback" *ngIf="commentForm.get('texte')?.errors?.['minlength']">
+          Minimum 2 caractères
+        </div>
+        <small class="text-muted">
+          <i class="fas fa-info-circle me-1"></i>
+          Vous commentez en tant que boutique
+        </small>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+      <i class="fas fa-times me-2"></i>
+      Annuler
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-primary" 
+      (click)="addComment()"
+      [disabled]="commentForm.invalid || loading">
+      <i class="fas fa-paper-plane me-2"></i>
+      Envoyer
+    </button>
+  </div>
+</ng-template>
+
+<!-- Modal de réouverture avec commentaire -->
+<ng-template #reopenCommentModal let-modal>
+  <div class="modal-header">
+    <h5 class="modal-title">
+      <i class="fas fa-redo-alt text-warning me-2"></i>
+      Rouvrir le ticket
+    </h5>
+    <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
+  </div>
+  
+  <div class="modal-body">
+    <p>Voulez-vous ajouter une note expliquant pourquoi ce ticket est rouvert ?</p>
+    <form [formGroup]="commentForm">
+      <div class="mb-3">
+        <label class="form-label">Note de réouverture (optionnelle)</label>
+        <textarea
+          class="form-control"
+          rows="4"
+          formControlName="texte"
+          placeholder="Expliquez pourquoi vous rouvrez ce ticket...">
+        </textarea>
+        <small class="text-muted">
+          <i class="fas fa-info-circle me-1"></i>
+          Vous pouvez laisser vide pour rouvrir sans commentaire
+        </small>
+      </div>
+    </form>
+  </div>
+
+  <div class="modal-footer">
+    <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
+      <i class="fas fa-times me-2"></i>
+      Annuler
+    </button>
+    <button 
+      type="button" 
+      class="btn btn-warning" 
+      (click)="reopenTicketWithComment()">
+      <i class="fas fa-redo-alt me-2"></i>
+      Rouvrir le ticket
     </button>
   </div>
 </ng-template>

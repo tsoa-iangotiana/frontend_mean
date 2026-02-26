@@ -1,0 +1,202 @@
+<!-- ─── Notification ──────────────────────────────────────────────────────── -->
+<div class="notification" *ngIf="notification" [class.success]="notification.type === 'success'" [class.error]="notification.type === 'error'">
+  {{ notification.message }}
+</div>
+
+<!-- ─── Conteneur principal ──────────────────────────────────────────────── -->
+<div class="page-container">
+
+  <!-- En-tête -->
+  <div class="page-header">
+    <div class="page-title">
+      <h1>🏷️ Gestion des catégories</h1>
+      <span class="badge-count">{{ filteredCategories.length }} catégorie{{ filteredCategories.length > 1 ? 's' : '' }}</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="openMultipleModal()">
+        ➕ Import multiple
+      </button>
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        ➕ Nouvelle catégorie
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtres & recherche -->
+  <div class="toolbar">
+    <div class="view-tabs">
+      <button class="tab" [class.active]="viewMode === 'all'" (click)="switchView('all')">
+        Toutes
+      </button>
+      <button class="tab" [class.active]="viewMode === 'valides'" (click)="switchView('valides')">
+        Actives uniquement
+      </button>
+    </div>
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        placeholder="Rechercher une catégorie..."
+        [(ngModel)]="searchQuery"
+        (input)="applySearch()"
+      />
+      <button *ngIf="searchQuery" class="clear-btn" (click)="searchQuery = ''; applySearch()">✕</button>
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div class="loader-container" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Tableau -->
+  <div class="table-wrapper" *ngIf="!loading">
+    <table class="data-table" *ngIf="filteredCategories.length > 0; else emptyState">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Statut</th>
+          <th>Créée le</th>
+          <th>Modifiée le</th>
+          <th class="col-actions">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let cat of filteredCategories">
+          <td class="cell-nom">{{ cat.nom }}</td>
+          <td>
+            <span class="badge" [class.badge-active]="cat.valide" [class.badge-inactive]="!cat.valide">
+              {{ cat.valide ? '✅ Active' : '⛔ Inactive' }}
+            </span>
+          </td>
+          <td class="cell-date">{{ cat.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td class="cell-date">{{ cat.updatedAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td class="cell-actions">
+            <button class="btn-icon btn-toggle" [title]="cat.valide ? 'Désactiver' : 'Activer'" (click)="doToggle(cat)">
+              {{ cat.valide ? '🔕' : '🔔' }}
+            </button>
+            <button class="btn-icon btn-edit" title="Modifier" (click)="openEditModal(cat)">
+              ✏️
+            </button>
+            <button class="btn-icon btn-delete" title="Supprimer" (click)="confirmDelete(cat)">
+              🗑️
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- État vide -->
+    <ng-template #emptyState>
+      <div class="empty-state">
+        <span class="empty-icon">🏷️</span>
+        <p>Aucune catégorie trouvée</p>
+        <span *ngIf="searchQuery">pour la recherche "{{ searchQuery }}"</span>
+      </div>
+    </ng-template>
+  </div>
+
+</div> <!-- FIN du page-container -->
+
+<!-- ========== TOUS LES MODALS PLACÉS ICI, EN DEHORS DU page-container ========== -->
+
+<!-- ─── Modal Créer / Modifier ────────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="modalMode === 'create' || modalMode === 'edit'" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ modalMode === 'edit' ? '✏️ Modifier la catégorie' : '➕ Nouvelle catégorie' }}</h2>
+      <button class="modal-close" (click)="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group" [class.has-error]="formErrors.nom">
+        <label for="cat-nom">Nom <span class="required">*</span></label>
+        <input
+          id="cat-nom"
+          type="text"
+          [(ngModel)]="form.nom"
+          placeholder="Ex : Électronique"
+          (keyup.enter)="saveForm()"
+        />
+        <span class="error-msg" *ngIf="formErrors.nom">{{ formErrors.nom }}</span>
+      </div>
+
+      <div class="form-group">
+        <label class="toggle-label">
+          <div class="toggle-switch" [class.on]="form.valide" (click)="form.valide = !form.valide">
+            <div class="toggle-thumb"></div>
+          </div>
+          <span>{{ form.valide ? 'Active' : 'Inactive' }}</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" (click)="closeModal()" [disabled]="saving">Annuler</button>
+      <button class="btn btn-primary" (click)="saveForm()" [disabled]="saving">
+        <span *ngIf="saving" class="spinner-sm"></span>
+        {{ saving ? 'Enregistrement...' : (modalMode === 'edit' ? 'Mettre à jour' : 'Créer') }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Modal Import multiple ─────────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="modalMode === 'multiple'" (click)="closeModal()">
+  <div class="modal modal-large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>➕ Import multiple</h2>
+      <button class="modal-close" (click)="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <p class="hint">Collez un tableau JSON de catégories. Exemple :</p>
+      <pre class="code-hint">[
+  {{ '{' }} "nom": "Électronique", "valide": true {{ '}' }},
+  {{ '{' }} "nom": "Vêtements" {{ '}' }}
+]</pre>
+
+      <div class="form-group" [class.has-error]="multipleError">
+        <label>JSON</label>
+        <textarea
+          [(ngModel)]="multipleRaw"
+          rows="10"
+          placeholder='[{ "nom": "...", "valide": true }]'
+        ></textarea>
+        <span class="error-msg" *ngIf="multipleError" style="white-space: pre-line">{{ multipleError }}</span>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" (click)="closeModal()" [disabled]="saving">Annuler</button>
+      <button class="btn btn-primary" (click)="saveMultiple()" [disabled]="saving">
+        <span *ngIf="saving" class="spinner-sm"></span>
+        {{ saving ? 'Import en cours...' : 'Importer' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Confirmation suppression ─────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="deleteTarget" (click)="cancelDelete()">
+  <div class="modal modal-small" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>🗑️ Confirmer la suppression</h2>
+      <button class="modal-close" (click)="cancelDelete()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p>Voulez-vous vraiment supprimer la catégorie <strong>{{ deleteTarget?.nom }}</strong> ?</p>
+      <p class="hint danger">Cette action est irréversible.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" (click)="cancelDelete()">Annuler</button>
+      <button class="btn btn-danger" (click)="doDelete()">Supprimer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Petit indicateur de débogage (à supprimer plus tard) -->
+<div *ngIf="modalMode" style="position: fixed; top: 10px; left: 10px; background: red; color: white; padding: 5px 10px; border-radius: 4px; z-index: 10000; font-size: 12px;">
+  Modal actif: {{ modalMode }}
+</div>

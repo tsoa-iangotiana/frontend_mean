@@ -92,15 +92,15 @@ export class ProduitService {
   createProduits(produits: ProduitInput[]): Observable<{ message: string; produits: Produit[] }> {
     try {
       const boutiqueId = this.getBoutiqueId();
-      
+
       // Validation supplémentaire
       if (!produits.length) {
         throw new Error('Au moins un produit requis');
       }
 
       return this.http.post<{ message: string; produits: Produit[] }>(
-        this.apiUrl, 
-        { 
+        this.apiUrl,
+        {
           produits,
           boutiqueId  // ← Envoi explicite de l'ID boutique
         }
@@ -124,7 +124,7 @@ export class ProduitService {
   }): Observable<ProduitsResponse> {
     try {
       const boutiqueId = this.getBoutiqueId();
-      
+
       let httpParams = new HttpParams()
         .set('boutiqueId', boutiqueId)  // ← Ajout obligatoire
         .set('page', params?.page?.toString() || '1')
@@ -155,7 +155,7 @@ export class ProduitService {
   getProduit(id: string): Observable<Produit> {
     try {
       const boutiqueId = this.getBoutiqueId();
-      
+
       return this.http.get<Produit>(`${this.apiUrl}/${id}`, {
         params: new HttpParams().set('boutiqueId', boutiqueId)
       }).pipe(
@@ -172,9 +172,9 @@ export class ProduitService {
   updateProduit(id: string, produit: Partial<ProduitInput>): Observable<Produit> {
     try {
       const boutiqueId = this.getBoutiqueId();
-      
+
       return this.http.put<Produit>(
-        `${this.apiUrl}/${id}`, 
+        `${this.apiUrl}/${id}`,
         {
           ...produit,
           boutiqueId  // ← Pour vérification back-end
@@ -212,7 +212,7 @@ export class ProduitService {
   getSituationStock(id: string): Observable<SituationStock> {
     try {
       const boutiqueId = this.getBoutiqueId();
-      
+
       return this.http.get<SituationStock>(`${this.apiUrl}/${id}/stock`, {
         params: new HttpParams().set('boutiqueId', boutiqueId)
       }).pipe(
@@ -229,9 +229,9 @@ export class ProduitService {
   updateStock(id: string, update: StockUpdate): Observable<{ message: string; produit: any }> {
     try {
       const boutiqueId = this.getBoutiqueId();
-      
+
       return this.http.put<{ message: string; produit: any }>(
-        `${this.apiUrl}/${id}/stock`, 
+        `${this.apiUrl}/${id}/stock`,
         {
           ...update,
           boutiqueId  // ← Vérification
@@ -251,7 +251,7 @@ export class ProduitService {
     try {
       const boutiqueId = this.getBoutiqueId();
       const formData = new FormData();
-      
+
       files.forEach(file => {
         formData.append('images', file);
       });
@@ -274,7 +274,7 @@ export class ProduitService {
   private handleError(operation: string) {
     return (error: any): Observable<never> => {
       console.error(`Erreur lors de ${operation}:`, error);
-      
+
       let message = `Erreur lors de ${operation}`;
       if (error.error?.message) {
         message = error.error.message;
@@ -301,8 +301,8 @@ export class ProduitService {
           throw new Error('Aucune boutique sélectionnée');
         }
         return this.http.post<{ message: string; produits: Produit[] }>(
-          this.apiUrl, 
-          { 
+          this.apiUrl,
+          {
             produits,
             boutiqueId: boutique._id
           }
@@ -310,5 +310,57 @@ export class ProduitService {
       }),
       catchError(this.handleError('création des produits'))
     );
+  }
+
+  /**
+   * Récupérer tous les produits d'une boutique spécifique (sans utiliser le context)
+   * @param boutiqueId ID de la boutique
+   * @param params Paramètres de filtrage et pagination
+   */
+  getProduitsByBoutique(boutiqueId: string, params?: {
+    page?: number;
+    limit?: number;
+    actif?: boolean;
+    categorie?: string;
+    search?: string;
+  }): Observable<ProduitsResponse> {
+    let httpParams = new HttpParams()
+      .set('boutiqueId', boutiqueId)
+      .set('page', params?.page?.toString() || '1')
+      .set('limit', params?.limit?.toString() || '20');
+
+    if (params?.actif !== undefined) {
+      httpParams = httpParams.set('actif', params.actif.toString());
+    }
+    if (params?.categorie) {
+      httpParams = httpParams.set('categorie', params.categorie);
+    }
+    if (params?.search) {
+      httpParams = httpParams.set('search', params.search);
+    }
+
+    return this.http.get<ProduitsResponse>(this.apiUrl, { params: httpParams })
+      .pipe(
+        catchError(this.handleError('chargement des produits'))
+      );
+  }
+
+  /**
+   * Récupérer un produit par ID pour une boutique spécifique
+   */
+  getProduitByBoutique(boutiqueId: string, produitId: string): Observable<Produit> {
+    return this.http.get<Produit>(`${this.apiUrl}/${produitId}`, {
+      params: new HttpParams().set('boutiqueId', boutiqueId)
+    }).pipe(
+      catchError(this.handleError('chargement du produit'))
+    );
+  }
+
+  // Ajoute cette méthode
+  getBoutiqueInfo(boutiqueId: string): Observable<Boutique> {
+    return this.http.get<Boutique>(`${environment.apiUrl}/boutique/${boutiqueId}`)
+      .pipe(
+        catchError(this.handleError('chargement des informations boutique'))
+      );
   }
 }

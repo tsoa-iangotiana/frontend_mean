@@ -1,0 +1,206 @@
+<div class="produits-container">
+  <!-- Barre de navigation avec bouton retour -->
+  <div class="navigation-bar">
+    <button class="btn-back" [routerLink]="['/boutique/all']">
+      <i class="fas fa-arrow-left"></i>
+      Retour aux boutiques
+    </button>
+
+    <!-- Tu peux aussi ajouter le chemin actuel -->
+    <span class="current-path" *ngIf="boutiqueInfo">
+      <i class="fas fa-chevron-right"></i>
+      {{ boutiqueInfo.nom }}
+    </span>
+  </div>
+  <!-- En-tête avec nom boutique -->
+  <div class="boutique-header" *ngIf="boutiqueInfo">
+    <h1>{{ boutiqueInfo.nom }}</h1>
+    <p class="produits-count">{{ totalProduits }} produit(s) disponible(s)</p>
+  </div>
+
+  <!-- Barre de filtres -->
+  <div class="filters-bar">
+    <!-- Recherche -->
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input
+        type="text"
+        [value]="filters.search"
+        (input)="onSearch($event)"
+        placeholder="Rechercher un produit..."
+        class="search-input"
+      />
+      <button *ngIf="filters.search" (click)="resetFilters()" class="clear-search">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Filtre catégorie -->
+    <div class="filter-group" *ngIf="categories.length > 0">
+      <select
+        [(ngModel)]="filters.categorie"
+        (ngModelChange)="onCategorieChange($event)"
+        class="filter-select"
+      >
+        <option value="">Toutes catégories</option>
+        <option *ngFor="let cat of categories" [value]="cat._id">
+          {{ cat.nom }}
+        </option>
+      </select>
+    </div>
+
+    <!-- Bouton reset -->
+    <button
+      class="btn-reset"
+      (click)="resetFilters()"
+      *ngIf="filters.search || filters.categorie"
+    >
+      <i class="fas fa-redo-alt"></i> Réinitialiser
+    </button>
+  </div>
+
+  <!-- État de chargement -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement des produits...</p>
+  </div>
+
+  <!-- Message d'erreur -->
+  <div *ngIf="error" class="error-state">
+    <i class="fas fa-exclamation-circle"></i>
+    <p>{{ error }}</p>
+    <button (click)="loadProduits()" class="retry-btn">
+      <i class="fas fa-sync-alt"></i> Réessayer
+    </button>
+  </div>
+
+  <!-- Grille de produits -->
+  <div *ngIf="!loading && !error" class="produits-grid">
+    <!-- Message si aucun produit -->
+    <div *ngIf="produits.length === 0" class="empty-state">
+      <i class="fas fa-box-open"></i>
+      <h3>Aucun produit trouvé</h3>
+      <p *ngIf="filters.search || filters.categorie">
+        Aucun produit ne correspond à vos critères de recherche.
+        <button (click)="resetFilters()" class="link-btn">Réinitialiser les filtres</button>
+      </p>
+      <p *ngIf="!filters.search && !filters.categorie">
+        Cette boutique n'a pas encore de produits disponibles.
+      </p>
+    </div>
+
+    <!-- Cartes produits -->
+    <div class="cards-grid" *ngIf="produits.length > 0">
+      <div *ngFor="let produit of paginatedProduits" class="produit-card">
+        <!-- En-tête de la carte avec image et badges -->
+        <div class="card-header">
+          <div class="produit-image">
+            <img
+              [src]="produit.images[0] || 'https://res.cloudinary.com/dll5d7pgm/image/upload/v1771525166/boutiques/bphykymmvhbp2kzejmwb.png'"
+              [alt]="produit.nom"
+              (error)="$event.target.src = 'https://res.cloudinary.com/dll5d7pgm/image/upload/v1771525166/boutiques/bphykymmvhbp2kzejmwb.png'"
+            />
+          </div>
+          <div class="produit-badges">
+            <span class="stock-badge" [ngClass]="getStockClass(produit)">
+              {{ getStockLabel(produit) }}
+            </span>
+            <span class="unite-badge">
+              {{ getUniteLabel(produit.unite) }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Corps de la carte -->
+        <div class="card-body">
+          <h3 class="produit-nom">{{ produit.nom }}</h3>
+
+          <div class="produit-categorie" *ngIf="produit.categorie">
+            <i class="fas fa-tag"></i>
+            {{ produit.categorie.nom }}
+          </div>
+
+          <p class="produit-description" *ngIf="produit.description">
+            {{ produit.description.length > 80 ? (produit.description | slice:0:80) + '...' : produit.description }}
+          </p>
+
+          <div class="produit-prix">
+            {{ formatPrice(produit.prix) }}
+            <span class="prix-unite">/ {{ getUniteLabel(produit.unite) }}</span>
+          </div>
+
+          <!-- Indicateur de stock -->
+          <div class="stock-indicator" *ngIf="produit.stock > 0">
+            <div class="stock-bar">
+              <div
+                class="stock-fill"
+                [style.width.%]="(produit.stock / 20) * 100"
+                [ngClass]="{'stock-fill-critique': produit.stock <= 5}"
+              ></div>
+            </div>
+            <span class="stock-text">
+              <i class="fas fa-exclamation-triangle" *ngIf="produit.stock <= 5"></i>
+              Plus que {{ produit.stock }} en stock
+            </span>
+          </div>
+        </div>
+
+        <!-- Pied de carte avec actions -->
+        <div class="card-footer">
+          <button
+            class="btn-add-to-cart"
+            [class.btn-disabled]="!canAddToCart(produit)"
+            [class.btn-loading]="addingToCart.has(produit._id)"
+            [disabled]="!canAddToCart(produit) || addingToCart.has(produit._id)"
+            (click)="addToCart(produit)"
+          >
+            <i class="fas fa-shopping-cart" *ngIf="!addingToCart.has(produit._id)"></i>
+            <i class="fas fa-spinner fa-spin" *ngIf="addingToCart.has(produit._id)"></i>
+            <span>
+              {{ addingToCart.has(produit._id) ? 'Ajout en cours...' :
+                 (produit.stock <= 0 ? 'Rupture de stock' : 'Ajouter au panier') }}
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="!loading && !error && produits.length > 0" class="pagination">
+      <button
+        (click)="changePage(currentPage - 1)"
+        [disabled]="currentPage === 1"
+        class="page-btn prev"
+      >
+        <i class="fas fa-chevron-left"></i> Précédent
+      </button>
+
+      <div class="page-numbers">
+        <button
+          *ngFor="let page of [].constructor(totalPages); let i = index"
+          (click)="changePage(i + 1)"
+          [class.active]="currentPage === i + 1"
+          class="page-btn number"
+        >
+          {{i + 1}}
+        </button>
+      </div>
+
+      <button
+        (click)="changePage(currentPage + 1)"
+        [disabled]="currentPage === totalPages"
+        class="page-btn next"
+      >
+        Suivant <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+
+    <!-- Information sur le nombre d'éléments -->
+    <div *ngIf="!loading && !error && produits.length > 0" class="items-info">
+      <i class="fas fa-box"></i>
+      Affichage {{(currentPage - 1) * itemsPerPage + 1}} -
+      {{Math.min(currentPage * itemsPerPage, totalProduits)}}
+      sur {{totalProduits}} produits
+    </div>
+  </div>
+</div>

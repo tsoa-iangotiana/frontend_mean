@@ -1,10 +1,10 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
 export interface Boutique {
-  _id?: string;
+  _id?: string ;
   profil_photo?: string | null;
   slogan?: string | null;
   condition_vente?: string | null;
@@ -15,15 +15,19 @@ export interface Boutique {
   responsable?: string;
   active?: boolean;
   categories: Categorie[];
-  note_moyenne?: number;
+  note_moyenne?: number;  // Note moyenne calculée par le backend
   createdAt?: Date;
   updatedAt?: Date;
+  userNote?: number;      // Note donnée par l'utilisateur connecté
+  estFavoris?: boolean;
 }
 
 export interface Categorie {
   _id: string;
   nom: string;
   valide: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Box {
@@ -43,6 +47,9 @@ export class ProfilService {
 
   constructor(private http: HttpClient) { }
 
+  toggleBoutiqueActive(boutiqueId: string): Observable<any> {
+  return this.http.patch(`${this.apiUrl}/${boutiqueId}/toggle`, {});
+}
   // Vérifier si le responsable a une boutique
   checkResponsableBoutique(responsableId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/check-responsable/${responsableId}`);
@@ -91,7 +98,30 @@ export class ProfilService {
   }
 
   //recuperer tous les boutiques
-  getAllBoutiques(): Observable<any> {
-    return this.http.get(`${this.apiUrl}/all`);
+  getAllBoutiques(filters?: { active?: boolean; search?: string; page?: number; limit?: number }): Observable<any> {
+    let params = new HttpParams();
+    
+    if (filters) {
+      if (filters.active !== undefined) {
+        params = params.set('active', filters.active.toString());
+      }
+      if (filters.search) {
+        params = params.set('search', filters.search);
+      }
+      if (filters.page) {
+        params = params.set('page', filters.page.toString());
+      }
+      if (filters.limit) {
+        params = params.set('limit', filters.limit.toString());
+      }
+    }
+
+    // 👉 Important: passer les params dans la requête
+    return this.http.get(`${this.apiUrl}/all`, { params });
+  }
+
+  // Ou version simplifiée si vous voulez juste les boutiques actives
+  getBoutiquesActives(limit: number = 100): Observable<any> {
+    return this.getAllBoutiques({ active: true, limit });
   }
 }

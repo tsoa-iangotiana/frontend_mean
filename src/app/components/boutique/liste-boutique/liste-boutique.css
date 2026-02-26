@@ -626,3 +626,86 @@
 .Math {
   display: none;
 }
+
+/* Styles pour les étoiles interactives */
+.stars-interactive {
+  display: flex;
+  gap: 2px;
+}
+
+.stars-interactive i {
+  cursor: pointer;
+  color: #ddd;
+  transition: color 0.2s;
+}
+
+.stars-interactive i.filled {
+  color: #ffc107;
+}
+
+.stars-interactive i:hover {
+  transform: scale(1.1);
+}
+
+/* Style pour le bouton favori */
+.favorite-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #ddd;
+  transition: all 0.2s;
+  padding: 5px;
+}
+
+.favorite-btn.active {
+  color: #ff4444;
+}
+
+.favorite-btn:hover {
+  transform: scale(1.1);
+}
+
+.favorite-btn.active:hover {
+  color: #ff6b6b;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  position: relative;
+}
+
+.boutique-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stars-interactive i.pointer {
+  cursor: pointer;
+}
+
+.stars-interactive i.disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.note-value {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+.note-separator {
+  color: #999;
+  font-size: 0.8rem;
+}
+
+.note-total {
+  color: #666;
+  font-size: 0.8rem;
+  margin-left: 4px;
+}
