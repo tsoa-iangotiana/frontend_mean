@@ -1,0 +1,134 @@
+<div class="commandes-container">
+  <!-- En-tête -->
+  <div class="commandes-header">
+    <h1>Mes Commandes</h1>
+    <button class="btn-refresh" (click)="chargerCommandes()" [disabled]="loading">
+      <i class="fas fa-sync-alt" [class.fa-spin]="loading"></i>
+      Actualiser
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement de vos commandes...</p>
+  </div>
+
+  <!-- Aucune commande -->
+  <div *ngIf="!loading && commandes.length === 0" class="empty-state">
+    <i class="fas fa-box-open"></i>
+    <h3>Aucune commande trouvée</h3>
+    <p *ngIf="filtres.statut === 'EN_ATTENTE'">
+      Vous n'avez pas de commande en attente.
+    </p>
+    <p *ngIf="filtres.statut !== 'EN_ATTENTE' && filtres.statut">
+      Aucune commande avec le statut "{{ getStatutLabel(filtres.statut) }}"
+    </p>
+    <button routerLink="/boutique/all" class="btn-decouvrir">
+      <i class="fas fa-store"></i> Découvrir les boutiques
+    </button>
+  </div>
+
+  <!-- 📦 GRILLE DE COMMANDES - 3 CARTES PAR LIGNE -->
+  <div *ngIf="!loading && commandes.length > 0" class="commandes-grid">
+    <div *ngFor="let cmd of commandes" class="commande-card">
+
+      <!-- En-tête avec boutique et statut -->
+      <div class="commande-header">
+        <div class="boutique-info">
+          <i class="fas fa-store"></i>
+          <h4>{{ cmd.boutique }}</h4>
+        </div>
+        <div class="statut-badge" [ngClass]="getStatutClass(cmd.statut)">
+          <span class="statut-icon">{{ cmd.statut_info.icon }}</span>
+          <span class="statut-label">{{ cmd.statut_info.libelle }}</span>
+        </div>
+      </div>
+
+      <!-- Date et référence compactes -->
+      <div class="commande-meta">
+        <span class="commande-date">
+          <i class="far fa-calendar-alt"></i>
+          {{ cmd.date | date:'dd/MM/yy' }}
+        </span>
+        <span class="commande-reference">
+          #{{ cmd._id | slice:-6 }}
+        </span>
+      </div>
+
+      <!-- Produits en liste compacte -->
+      <div class="produits-compacts">
+        <div *ngFor="let produit of cmd.apercu_produits" class="produit-compact">
+          <span class="produit-nom">{{ produit.nom | slice:0:15 }}{{ produit.nom.length > 15 ? '...' : '' }}</span>
+          <span class="produit-quantite">x{{ produit.quantite }}</span>
+          <span class="produit-prix">{{ formatPrice(produit.prix_unitaire) }}</span>
+        </div>
+      </div>
+
+      <!-- Total -->
+      <div class="commande-total">
+        <span class="total-label">Total</span>
+        <span class="total-montant">{{ formatPrice(cmd.montant_total) }}</span>
+      </div>
+
+      <!-- 🔴 NOUVEAU : Choix Récupérer / Livrer (uniquement pour commandes en attente) -->
+      <div *ngIf="cmd.statut === 'EN_ATTENTE'" class="livraison-choix">
+        <div class="choix-label">Mode de réception</div>
+        <div class="choix-boutons">
+          <button
+            class="btn-choix"
+            [class.active]="commandeEnCours.modeLivraison === 'recuperer' && commandeEnCours.id === cmd._id"
+            (click)="choisirRecuperer(cmd)">
+            <i class="fas fa-store-alt"></i>
+            Récupérer
+          </button>
+          <button
+            class="btn-choix"
+            [class.active]="commandeEnCours.modeLivraison === 'livrer' && commandeEnCours.id === cmd._id"
+            (click)="choisirLivrer(cmd)">
+            <i class="fas fa-truck"></i>
+            Livrer
+          </button>
+        </div>
+
+        <!-- Message pour Récupérer (simple) -->
+        <div *ngIf="commandeEnCours.id === cmd._id && commandeEnCours.modeLivraison === 'recuperer'" class="info-recuperer">
+          <i class="fas fa-info-circle"></i>
+          <span>Vous pourrez récupérer votre commande en boutique</span>
+        </div>
+
+        <!-- Message pour Livrer (avec bouton pour ouvrir la carte) -->
+        <div *ngIf="commandeEnCours.id === cmd._id && commandeEnCours.modeLivraison === 'livrer'" class="info-livrer">
+          <i class="fas fa-map-marker-alt"></i>
+          <span>Livraison à domicile</span>
+          <button class="btn-voir-carte" (click)="ouvrirCarteLivraison(cmd)">
+            <i class="fas fa-map"></i> Voir sur la carte
+          </button>
+        </div>
+      </div>
+
+      <!-- Section paiement (uniquement pour les commandes en attente) -->
+      <div *ngIf="cmd.statut === 'EN_ATTENTE'" class="paiement-section">
+        <button class="btn-payer" (click)="payerCommande(cmd)">
+          <i class="fas fa-credit-card"></i>
+          Payer
+        </button>
+      </div>
+
+      <!-- Badge pour les commandes déjà traitées -->
+      <div *ngIf="cmd.statut !== 'EN_ATTENTE'" class="statut-badge-compact" [ngClass]="getStatutClass(cmd.statut)">
+        <span class="statut-icon">{{ cmd.statut_info.icon }}</span>
+        <span class="statut-label">{{ cmd.statut_info.libelle }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Composant carte de livraison -->
+<app-livraison-carte
+  *ngIf="carteOuverte"
+  [commandeId]="commandeIdPourCarte"
+  (fermee)="fermerCarte()"
+  (positionConfirmee)="onPositionConfirmee($event)">
+</app-livraison-carte>
+

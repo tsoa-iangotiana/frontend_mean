@@ -100,6 +100,9 @@
               [alt]="produit.nom"
               (error)="$event.target.src = 'https://res.cloudinary.com/dll5d7pgm/image/upload/v1771525166/boutiques/bphykymmvhbp2kzejmwb.png'"
             />
+            <div class="promo-ribbon" *ngIf="produit.enPromotion">
+              -{{ produit.reduction }}%
+            </div>
           </div>
           <div class="produit-badges">
             <span class="stock-badge" [ngClass]="getStockClass(produit)">
@@ -124,8 +127,18 @@
             {{ produit.description.length > 80 ? (produit.description | slice:0:80) + '...' : produit.description }}
           </p>
 
+          <!-- Remplacer la section du prix par ceci -->
           <div class="produit-prix">
-            {{ formatPrice(produit.prix) }}
+            <ng-container *ngIf="produit.enPromotion; else prixNormal">
+              <div class="prix-promo-container">
+                <span class="prix-promo">{{ formatProduitPrice(produit) }}</span>
+                <span class="prix-barre">{{ getPrixOriginalFormatted(produit) }}</span>
+                <span class="promo-badge">{{ getPromotionText(produit) }}</span>
+              </div>
+            </ng-container>
+            <ng-template #prixNormal>
+              <span class="prix-normal">{{ formatPrice(produit.prix) }}</span>
+            </ng-template>
             <span class="prix-unite">/ {{ getUniteLabel(produit.unite) }}</span>
           </div>
 

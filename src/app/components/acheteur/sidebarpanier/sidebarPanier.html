@@ -1,0 +1,130 @@
+<!-- Overlay -->
+<div class="panier-overlay" [class.show]="isOpen" (click)="close()"></div>
+
+<!-- Sidebar -->
+<div class="panier-sidebar" [class.show]="isOpen">
+
+  <!-- En-tête -->
+  <div class="panier-header">
+    <div class="header-title">
+      <i class="fas fa-shopping-cart"></i>
+      <h2>Mon Panier</h2>
+      <span class="article-count" *ngIf="panier?.nombre_articles">
+        ({{ panier?.nombre_articles }})
+      </span>
+    </div>
+    <button class="btn-close" (click)="close()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement...</p>
+  </div>
+
+  <!-- Panier vide -->
+  <div *ngIf="!loading && (!panier || panier.nombre_articles === 0)" class="panier-vide">
+    <i class="fas fa-shopping-cart fa-3x"></i>
+    <h3>Votre panier est vide</h3>
+    <p>Découvrez nos boutiques</p>
+    <button routerLink="/boutique/all" class="btn-decouvrir" (click)="close()">
+      <i class="fas fa-store"></i> Découvrir
+    </button>
+  </div>
+
+  <!-- Panier avec articles -->
+  <div *ngIf="!loading && panier && panier.nombre_articles > 0" class="panier-content">
+
+    <!-- Liste des articles -->
+    <div class="panier-articles">
+      <div *ngFor="let group of itemsParBoutique | keyvalue" class="boutique-section">
+        <div class="boutique-header">
+          <i class="fas fa-store"></i>
+          <span class="boutique-nom">{{ group.value.boutique.nom }}</span>
+          <span class="boutique-total">{{ formatPrice(group.value.total) }}</span>
+        </div>
+
+        <div class="articles-list">
+          <div *ngFor="let item of group.value.items" class="article-card">
+            <!-- Image -->
+            <div class="article-image">
+              <img [src]="item.produit.images && item.produit.images.length > 0
+                          ? item.produit.images[0]
+                          : 'https://res.cloudinary.com/dll5d7pgm/image/upload/v1771525166/boutiques/bphykymmvhbp2kzejmwb.png'"
+                   [alt]="item.produit.nom"
+                   (error)="$event.target.src = 'https://res.cloudinary.com/dll5d7pgm/image/upload/v1771525166/boutiques/bphykymmvhbp2kzejmwb.png'">
+            </div>
+
+            <!-- Infos -->
+            <div class="article-infos">
+              <h4>{{ item.produit.nom }}</h4>
+              <div class="article-prix">
+                <span *ngIf="item.en_promotion" class="prix-promo">
+                  {{ formatPrice(item.prix_unitaire) }}
+                </span>
+                <span [class.prix-barre]="item.en_promotion">
+                  {{ formatPrice(item.produit.prix) }}
+                </span>
+              </div>
+              <div class="stock-info" [class.stock-faible]="item.stock_disponible <= 5">
+                <i class="fas fa-box"></i> Stock: {{ item.stock_disponible }}
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="article-actions">
+              <div class="quantite-control">
+                <button (click)="modifierQuantite(item.produit._id, item.quantite - 1)"
+                        [disabled]="item.quantite <= 1 || isUpdating(item.produit._id)"
+                        class="btn-qte">
+                  <i class="fas fa-minus"></i>
+                </button>
+                <span class="quantite">{{ isUpdating(item.produit._id) ? '...' : item.quantite }}</span>
+                <button (click)="modifierQuantite(item.produit._id, item.quantite + 1)"
+                        [disabled]="item.quantite >= item.stock_disponible || isUpdating(item.produit._id)"
+                        class="btn-qte">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              <div class="article-total">{{ formatPrice(item.prix_total) }}</div>
+              <button class="btn-supprimer" (click)="supprimerProduit(item.produit._id)"
+                      [disabled]="isUpdating(item.produit._id)">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Résumé -->
+    <div class="panier-resume">
+      <div class="resume-card">
+        <div class="resume-item">
+          <span>Sous-total</span>
+          <span>{{ formatPrice(panier.total_original) }}</span>
+        </div>
+        <div class="resume-item economies" *ngIf="panier.total_economies > 0">
+          <span>Économies</span>
+          <span>- {{ formatPrice(panier.total_economies) }}</span>
+        </div>
+        <div class="resume-item total">
+          <span>Total</span>
+          <span>{{ formatPrice(panier.total) }}</span>
+        </div>
+
+        <div class="action-buttons">
+          <button routerLink="/panier" class="btn-voir-panier" (click)="close()">
+            Voir le panier détaillé
+          </button>
+        </div>
+
+        <button class="btn-vider" (click)="viderPanier()" [disabled]="loading">
+          <i class="fas fa-trash"></i> Vider le panier
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

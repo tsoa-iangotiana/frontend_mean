@@ -16,20 +16,28 @@ import { ListeProduitsAcheteurComponent } from './components/acheteur/liste-prod
 import { TicketsComponent } from './components/boutique/ticket/ticket.component';
 import { BoxManagementComponent } from './components/admin/box/box-management.component';
 export const routes: Routes = [
-    {path : 'inscription/:role', component : Inscription},
-    {path : 'articles', component : ArticleList, canActivate: [authGuard]},
+    {path: 'inscription/:role', component : Inscription},
+    {path: 'articles', component : ArticleList, canActivate: [authGuard]},
     {path: 'login', component: Login},
     {path: 'inscription', component: ChoixInscription},
     {path: 'boutique/profil', component: Profil, canActivate: [authGuard]},
-    {path : '', redirectTo: '/login', pathMatch: 'full'},
+    {path: '', redirectTo: '/login', pathMatch: 'full'},
     {path: 'boutique/produits', component: ProduitsComponent, canActivate: [authGuard]},
     {path: 'boutique/loyer',component : PayerLoyerComponent, canActivate: [authGuard, BoutiqueSelectionneeGuard]},
-    {path:'boutique/historique-paiement', component:HistoriqueLoyerComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
-    {path:'boutique/all', component:ListeBoutique },
+    {path: 'boutique/historique-paiement', component:HistoriqueLoyerComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path: 'boutique/all', component:ListeBoutique },
 
     {path: 'acheteur/:boutiqueId/produits', component: ListeProduitsAcheteurComponent },
-    {path:'boutique/ticket', component: TicketsComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path: 'boutique/ticket', component: TicketsComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
     {path: 'admin/clients',component: BoxManagementComponent, canActivate: [authGuard]},
+    {path: 'panier', loadComponent: () => import('./components/acheteur/panier/panier')
+      .then(m => m.PanierComponent),
+      canActivate: [authGuard] // Protection
+    },
+    {path: 'commandes', loadComponent: () => import('./components/acheteur/commandes/commandes')
+      .then(m => m.Commandes),
+      canActivate: [authGuard]
+    },
     //      {
 //     path: 'admin',
 //     loadComponent: () => import('./components/admin/admin.component')

@@ -44,7 +44,7 @@
             </div>
             <i *ngIf="selectedBoutique?._id === boutique._id" class="fas fa-check text-success ms-auto"></i>
           </a>
-          
+
           <!-- Message si aucune boutique -->
           <div *ngIf="boutiques.length === 0" class="dropdown-item text-muted text-center">
             <i class="fas fa-store-slash me-2"></i>
@@ -60,9 +60,18 @@
     </div>
 
       <!-- Panier (pour acheteurs) -->
-      <a *ngIf="userRole === 'acheteur'" routerLink="/panier" class="nav-link">
-        <i class="fas fa-shopping-cart" style="font-size: 20px; color: var(--primary-color);"></i>
+      <a *ngIf="userRole === 'acheteur'"
+        (click)="openPanierSidebar($event)"
+        class="nav-link cart-link"
+        [class.empty]="panierEstVide">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="cart-badge" *ngIf="!panierEstVide">
+          {{ nombreArticlesPanier }}
+        </span>
       </a>
+
+      <!-- Ajouter le sidebar après le reste -->
+      <app-sidebarPanier #panierSidebar></app-sidebarPanier>
 
       <!-- Menu utilisateur dropdown -->
       <div class="dropdown" ngbDropdown container="body" *ngIf="currentUser">

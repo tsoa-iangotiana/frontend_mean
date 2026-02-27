@@ -1,0 +1,279 @@
+:host {
+  --accent:    #2563eb;
+  --success:   #16a34a;
+  --success-h: #15803d;
+  --danger:    #ef4444;
+  --surface:   #ffffff;
+  --border:    #e5e7eb;
+  --text:      #111827;
+  --muted:     #6b7280;
+  --sidebar-w: 460px;
+}
+
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(3px);
+  z-index: 1999;
+  animation: fadeIn .25s ease;
+}
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+.sidebar {
+  position: fixed;
+  top: 0; right: 0;
+  width: var(--sidebar-w);
+  height: 100dvh;
+  background: var(--surface);
+  box-shadow: -6px 0 32px rgba(0,0,0,.14);
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: slideIn .32s cubic-bezier(.16,1,.3,1);
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0 }
+  to   { transform: translateX(0);    opacity: 1 }
+}
+
+/* ── Header ── */
+.sb-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sb-header-left { display: flex; align-items: center; gap: .75rem; }
+.sb-icon     { font-size: 1.7rem; line-height: 1; }
+.sb-title    { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text); letter-spacing: -.02em; }
+.sb-subtitle { margin: .1rem 0 0; font-size: .77rem; color: var(--muted); }
+.btn-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 8px; border: 1px solid var(--border);
+  background: transparent; cursor: pointer; color: var(--muted);
+  transition: all .15s; flex-shrink: 0;
+  &:hover { background: #fee2e2; border-color: #fca5a5; color: var(--danger); }
+}
+
+/* ── Toolbar ── */
+.sb-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .75rem;
+  padding: .75rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.btn-locate {
+  display: flex; align-items: center; gap: .45rem;
+  padding: .55rem .9rem;
+  background: #eff6ff; color: var(--accent);
+  border: 1.5px solid #bfdbfe; border-radius: 8px;
+  font-size: .82rem; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: background .15s;
+  &:hover:not(:disabled) { background: #dbeafe; }
+  &:disabled { opacity: .6; cursor: wait; }
+}
+.layer-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.layer-btn {
+  display: flex; align-items: center; gap: .4rem;
+  padding: .5rem .85rem;
+  background: transparent; border: none;
+  font-size: .82rem; font-weight: 500; color: var(--muted);
+  cursor: pointer; transition: background .15s, color .15s;
+  &:first-child { border-right: 1px solid var(--border); }
+  &.active { background: var(--text); color: white; }
+  &:not(.active):hover { background: #f3f4f6; color: var(--text); }
+}
+
+/* ── Map wrapper ── */
+.sb-map-wrapper {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: #e8eaed;
+  /* Empêche l'iframe de déborder pendant le translate() du drag */
+  overflow: hidden;
+}
+
+/* ── Spinner ── */
+.map-loading {
+  position: absolute; inset: 0;
+  background: #e8eaed;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: .85rem;
+  font-size: .875rem; color: var(--muted);
+  z-index: 3;
+  pointer-events: none;
+  transition: opacity .3s ease, visibility .3s ease;
+}
+.map-loading--hidden { opacity: 0; visibility: hidden; }
+.spinner {
+  width: 36px; height: 36px;
+  border: 3px solid #dadce0;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .75s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg) } }
+
+/* ── Iframe ── */
+.gmap-iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  /* pointer-events: auto → Google Maps reçoit tout : drag, zoom molette,
+     pinch touch, Street View, clics sur les POI, etc.               */
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity .4s ease, transform .05s linear;
+  z-index: 2;
+}
+.gmap-iframe--ready { opacity: 1; }
+
+/* ── Saisie coordonnées ── */
+.sb-coords-input {
+  flex-shrink: 0;
+  padding: .75rem 1.25rem .65rem;
+  border-top: 1px solid var(--border);
+  background: #fafafa;
+}
+.input-label {
+  margin: 0 0 .5rem;
+  font-size: .78rem; color: var(--muted); font-weight: 500;
+}
+.coords-row {
+  display: flex; gap: .5rem; align-items: flex-end;
+}
+.coord-field {
+  flex: 1; display: flex; flex-direction: column; gap: .2rem;
+
+  label {
+    font-size: .75rem; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .03em;
+  }
+  input {
+    width: 100%; padding: .45rem .65rem;
+    border: 1.5px solid var(--border); border-radius: 8px;
+    font-size: .85rem; color: var(--text); background: white;
+    box-sizing: border-box; transition: border-color .15s;
+    font-family: 'Courier New', monospace;
+    &:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+    /* [AJOUT] readonly : fond grisé, non éditable visuellement */
+    &[readonly] { background: #f3f4f6; color: var(--muted); cursor: default; }
+  }
+}
+.btn-go {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: 38px; height: 38px;
+  background: var(--accent); color: white;
+  border: none; border-radius: 8px; cursor: pointer;
+  transition: background .15s, transform .1s;
+  &:hover  { background: #1d4ed8; transform: translateX(1px); }
+  &:active { transform: translateX(0); }
+}
+.coord-error {
+  margin: .4rem 0 0;
+  font-size: .76rem; color: var(--danger);
+}
+
+/* ── Footer ── */
+.sb-footer {
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border);
+  background: #f9fafb; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: .75rem;
+}
+.coord-chip {
+  display: inline-flex; align-items: center; gap: .5rem;
+  background: #eff6ff; border: 1px solid #bfdbfe;
+  border-radius: 99px; padding: .35rem .75rem .35rem .85rem;
+  width: fit-content;
+}
+.coord-dot  { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.coord-text { font-size: .8rem; font-family: 'Courier New', monospace; color: var(--accent); font-weight: 600; }
+.coord-copy {
+  display: flex; align-items: center; justify-content: center;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--accent); opacity: .6; padding: 2px; border-radius: 4px;
+  transition: opacity .15s;
+  &:hover { opacity: 1; }
+}
+.btn-confirm {
+  display: flex; align-items: center; justify-content: center; gap: .5rem;
+  width: 100%; padding: .82rem;
+  background: var(--success); color: white;
+  border: none; border-radius: 10px;
+  font-size: .95rem; font-weight: 600; cursor: pointer;
+  box-shadow: 0 2px 10px rgba(22,163,74,.3);
+  transition: background .15s, transform .1s, box-shadow .15s;
+  &:hover  { background: var(--success-h); box-shadow: 0 4px 16px rgba(22,163,74,.42); transform: translateY(-1px); }
+  &:active { transform: translateY(0); }
+}
+.empty-hint {
+  display: flex; align-items: center; gap: .45rem;
+  margin: 0; font-size: .85rem; color: var(--muted);
+}
+
+@media (max-width: 500px) {
+  :host { --sidebar-w: 100vw; }
+}
+
+/* Ajouter dans carte.css */
+
+.distance-info {
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+
+.distance-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+  color: #0369a1;
+  font-size: 0.85rem;
+}
+
+.distance-text {
+  font-weight: 600;
+}
+
+.distance-from {
+  font-size: 0.75rem;
+  color: #0284c7;
+  opacity: 0.8;
+  margin-left: auto;
+}
+
+.distance-chip svg {
+  flex-shrink: 0;
+  color: #0284c7;
+}
+
+/* Ajustement pour mobile */
+@media (max-width: 500px) {
+  .distance-chip {
+    flex-wrap: wrap;
+  }
+
+  .distance-from {
+    margin-left: 0;
+    width: 100%;
+  }
+}
