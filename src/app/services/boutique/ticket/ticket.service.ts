@@ -1,11 +1,37 @@
 // services/boutique/ticket/ticket.service.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { catchError, Observable } from 'rxjs';
+import { catchError, Observable, throwError , tap } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { BoutiqueContextService } from '../context/boutique.context.service';
 
-// Interface pour un ticket
+// ===== INTERFACES POUR LES COMMENTAIRES =====
+export interface Commentaire {
+  _id?: string;
+  auteurType: 'user' | 'boutique' | 'systeme';
+  auteur?: {
+    _id: string;
+    nom?: string;
+    email?: string;
+  } | string;
+  auteurRef?: 'User' | 'Boutique';
+  texte: string;
+  date: Date;
+  type?: 'commentaire' | 'resolution' | 'reouverture';
+}
+
+export interface AddCommentData {
+  texte: string;
+  auteurType?: 'user' | 'boutique' | 'systeme'; // Optionnel, défini par le backend selon le contexte
+}
+
+export interface CommentaireResponse {
+  success: boolean;
+  commentaires: Commentaire[];
+  total: number;
+}
+
+// ===== INTERFACES POUR LES TICKETS =====
 export interface Ticket {
   _id: string;
   boutique: string | any; // string si non peuplé, object si peuplé
@@ -16,25 +42,27 @@ export interface Ticket {
   resolvedAt?: Date;
   createdAt: Date;
   updatedAt: Date;
+  commentaires?: Commentaire[]; // Ajout des commentaires dans le ticket
 }
 
-// Interface pour la création d'un ticket
 export interface CreateTicketData {
   sujet: string;
   description: string;
   priorite?: 'BASSE' | 'MOYENNE' | 'HAUTE' | 'URGENT';
 }
 
-// Interface pour les filtres de tickets
 export interface TicketFilters {
   statut?: 'OUVERT' | 'EN_COURS' | 'RESOLU';
   priorite?: 'BASSE' | 'MOYENNE' | 'HAUTE' | 'URGENT';
   page?: number;
   limit?: number;
   search?: string;
+  boutiqueId?: string;
+  dateDebut?: Date ;
+  dateFin?: Date ;
+  tri?: string;
 }
 
-// Interface pour la réponse paginée
 export interface TicketResponse {
   tickets: Ticket[];
   total: number;
@@ -42,7 +70,23 @@ export interface TicketResponse {
   totalPages: number;
 }
 
-// Interface pour les statistiques des tickets
+export interface PaginatedTicketResponse {
+  success: boolean;
+  data: Ticket[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalItems: number;
+    itemsPerPage: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+    nextPage: number | null;
+    prevPage: number | null;
+  };
+  filters?: any;
+  stats?: any;
+}
+
 export interface TicketStats {
   total: number;
   ouvert: number;
@@ -50,17 +94,48 @@ export interface TicketStats {
   resolu: number;
   urgent: number;
   hautPriorite: number;
+  moyennePriorite?: number;
+  bassePriorite?: number;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class TicketService {
-  // URL de base pour les tickets (correspond à votre préfixe)
   private apiUrl = `${environment.apiUrl}/ticket`;
 
-  constructor(private http: HttpClient,private boutiqueContext: BoutiqueContextService) { }
+  constructor(
+    private http: HttpClient,
+    private boutiqueContext: BoutiqueContextService
+  ) { }
 
+  // ===== MÉTHODES POUR LES BOUTIQUES =====
+  updatePriorityFromString(ticket: Ticket, priority: string): void {
+  const validPriorities = ['BASSE', 'MOYENNE', 'HAUTE', 'URGENT'];
+  console.log('🔄 Mise à jour priorité:', priority);
+  
+  if (!validPriorities.includes(priority)) {
+    console.warn('❌ Priorité invalide:', priority);
+    return;
+  }
+
+  // 👇 IMPORTANT: Il faut souscrire pour que la requête soit envoyée
+  this.updateTicketPriority(ticket._id, priority as 'BASSE' | 'MOYENNE' | 'HAUTE' | 'URGENT')
+    .subscribe({
+      next: (updatedTicket) => {
+        console.log('✅ Réponse reçue - Ticket mis à jour:', updatedTicket);
+        
+        // Mettre à jour le ticket local avec les données du serveur
+        ticket.priorite = updatedTicket.priorite;
+        ticket.updatedAt = updatedTicket.updatedAt;
+        
+        console.log('🎯 Nouvelle priorité après mise à jour:', ticket.priorite);
+      },
+      error: (error) => {
+        console.error('❌ Erreur lors de la mise à jour:', error);
+      }
+    });
+}
   /**
    * Créer un nouveau ticket
    * POST /tickets
@@ -72,10 +147,9 @@ export class TicketService {
       throw new Error('Aucune boutique sélectionnée');
     }
     let params = new HttpParams().set('boutiqueId', boutique._id);
-    return this.http.post<Ticket>(this.apiUrl, data, { params }).pipe(catchError((error) => {
-      console.error('Erreur création ticket:', error);
-      throw error;
-    }));
+    return this.http.post<Ticket>(this.apiUrl, data, { params }).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
@@ -93,12 +167,14 @@ export class TicketService {
       if (filters.search) params = params.set('search', filters.search);
     }
 
-    return this.http.get<Ticket[]>(this.apiUrl, { params });
+    return this.http.get<Ticket[]>(this.apiUrl, { params }).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
    * Récupérer la liste des tickets avec pagination
-   * GET /tickets?page=1&limit=10
+   * GET /tickets/paginated
    */
   getTicketsPaginated(filters?: TicketFilters): Observable<TicketResponse> {
     let params = new HttpParams().set('boutiqueId', this.boutiqueContext.getBoutiqueSelectionnee()?._id || '');
@@ -111,7 +187,9 @@ export class TicketService {
       if (filters.search) params = params.set('search', filters.search);
     }
 
-    return this.http.get<TicketResponse>(`${this.apiUrl}/paginated`, { params });
+    return this.http.get<TicketResponse>(`${this.apiUrl}/paginated`, { params }).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
@@ -119,7 +197,9 @@ export class TicketService {
    * GET /tickets/:id
    */
   getTicketById(id: string): Observable<Ticket> {
-    return this.http.get<Ticket>(`${this.apiUrl}/${id}`);
+    return this.http.get<Ticket>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
@@ -127,23 +207,38 @@ export class TicketService {
    * PATCH /tickets/:id/statut
    */
   updateTicketStatus(id: string, statut: 'OUVERT' | 'EN_COURS' | 'RESOLU'): Observable<Ticket> {
-    return this.http.patch<Ticket>(`${this.apiUrl}/${id}/statut`, { statut });
+    return this.http.patch<Ticket>(`${this.apiUrl}/${id}/status`, { statut }).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
    * Mettre à jour la priorité d'un ticket
    * PATCH /tickets/:id/priorite
    */
-  updateTicketPriority(id: string, priorite: 'BASSE' | 'MOYENNE' | 'HAUTE' | 'URGENT'): Observable<Ticket> {
-    return this.http.patch<Ticket>(`${this.apiUrl}/${id}/priorite`, { priorite });
-  }
-
+  /**
+ * Mettre à jour la priorité d'un ticket
+ * PATCH /tickets/:id/priorite
+ */
+updateTicketPriority(id: string, priorite: 'BASSE' | 'MOYENNE' | 'HAUTE' | 'URGENT'): Observable<Ticket> {
+  console.log('📤 Envoi requête update priority:', { id, priorite });
+  
+  return this.http.patch<Ticket>(`${this.apiUrl}/${id}/priorite`, { priorite }).pipe(
+    tap({
+      next: (response : any) => console.log('📥 Réception réponse:', response),
+      error: (error : any) => console.error('❌ Erreur HTTP:', error)
+    }),
+    catchError(this.handleError)
+  );
+}
   /**
    * Résoudre un ticket
    * POST /tickets/:id/resoudre
    */
   resolveTicket(id: string): Observable<Ticket> {
-    return this.http.post<Ticket>(`${this.apiUrl}/${id}/resoudre`, {});
+    return this.http.post<Ticket>(`${this.apiUrl}/${id}/resoudre`, {}).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
@@ -151,15 +246,19 @@ export class TicketService {
    * POST /tickets/:id/rouvrir
    */
   reopenTicket(id: string): Observable<Ticket> {
-    return this.http.post<Ticket>(`${this.apiUrl}/${id}/rouvrir`, {});
+    return this.http.post<Ticket>(`${this.apiUrl}/${id}/rouvrir`, {}).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
-   * Supprimer un ticket (si autorisé)
+   * Supprimer un ticket
    * DELETE /tickets/:id
    */
   deleteTicket(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`);
+    return this.http.delete(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
@@ -168,11 +267,9 @@ export class TicketService {
    */
   getTicketStats(): Observable<TicketStats> {
     const params = new HttpParams().set('boutiqueId', this.boutiqueContext.getBoutiqueSelectionnee()?._id || '');
-    if (!params.get('boutiqueId')) {
-      throw new Error('Aucune boutique sélectionnée');
-    }
-
-    return this.http.get<TicketStats>(`${this.apiUrl}/stats`, { params });
+    return this.http.get<TicketStats>(`${this.apiUrl}/stats`, { params }).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
@@ -181,7 +278,9 @@ export class TicketService {
    */
   searchTickets(query: string): Observable<Ticket[]> {
     const params = new HttpParams().set('q', query);
-    return this.http.get<Ticket[]>(`${this.apiUrl}/search`, { params });
+    return this.http.get<Ticket[]>(`${this.apiUrl}/search`, { params }).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
@@ -189,7 +288,9 @@ export class TicketService {
    * GET /tickets/priorite/:priorite
    */
   getTicketsByPriority(priorite: string): Observable<Ticket[]> {
-    return this.http.get<Ticket[]>(`${this.apiUrl}/priorite/${priorite}`);
+    return this.http.get<Ticket[]>(`${this.apiUrl}/priorite/${priorite}`).pipe(
+      catchError(this.handleError)
+    );
   }
 
   /**
@@ -197,14 +298,155 @@ export class TicketService {
    * GET /tickets/statut/:statut
    */
   getTicketsByStatus(statut: string): Observable<Ticket[]> {
-    return this.http.get<Ticket[]>(`${this.apiUrl}/statut/${statut}`);
+    return this.http.get<Ticket[]>(`${this.apiUrl}/statut/${statut}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // ===== MÉTHODES POUR LES COMMENTAIRES =====
+
+  /**
+   * Ajouter un commentaire à un ticket
+   * POST /tickets/:id/commentaires
+   */
+  addComment(id: string, data: AddCommentData): Observable<any> {
+    const boutique = this.boutiqueContext.getBoutiqueSelectionnee();
+    let params = new HttpParams();
+    
+    // Si c'est une boutique qui commente, on ajoute boutiqueId dans la query
+    if (boutique?._id) {
+      params = params.set('boutiqueId', boutique._id);
+    }
+
+    return this.http.post(`${this.apiUrl}/${id}/commentaires`, data, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Récupérer tous les commentaires d'un ticket
+   * GET /tickets/:id/commentaires
+   */
+  getCommentaires(id: string): Observable<CommentaireResponse> {
+    const boutique = this.boutiqueContext.getBoutiqueSelectionnee();
+    let params = new HttpParams();
+    
+    if (boutique?._id) {
+      params = params.set('boutiqueId', boutique._id);
+    }
+
+    return this.http.get<CommentaireResponse>(`${this.apiUrl}/${id}/commentaires`, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Supprimer un commentaire (admin uniquement)
+   * DELETE /tickets/:ticketId/commentaires/:commentaireId
+   */
+  deleteCommentaire(ticketId: string, commentaireId: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${ticketId}/commentaires/${commentaireId}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  // ===== MÉTHODES POUR L'ADMIN =====
+
+  /**
+   * Récupérer tous les tickets (admin) avec pagination
+   * GET /tickets/all
+   */
+ getAllTickets(filters?: TicketFilters): Observable<PaginatedTicketResponse> {
+  let params = new HttpParams();
+  
+  if (filters) {
+    if (filters.statut) params = params.set('statut', filters.statut);
+    if (filters.priorite) params = params.set('priorite', filters.priorite);
+    if (filters.boutiqueId) params = params.set('boutiqueId', filters.boutiqueId);
+    if (filters.page) params = params.set('page', filters.page.toString());
+    if (filters.limit) params = params.set('limit', filters.limit.toString());
+    if (filters.search) params = params.set('search', filters.search);
+    
+    // CORRECTION: Vérifier le type avant d'appeler toISOString()
+    if (filters.dateDebut) {
+      console.log('📅 dateDebut avant conversion:', filters.dateDebut);
+        params = params.set('dateDebut', (filters.dateDebut as any).toString());
+      
+    }
+    
+    if (filters.dateFin) {
+        params = params.set('dateFin', (filters.dateFin as any).toString());
+      } 
+       if (filters.tri) params = params.set('tri', filters.tri);
+  }
+
+  return this.http.get<PaginatedTicketResponse>(`${this.apiUrl}/all`, { params }).pipe(
+    catchError(this.handleError)
+  );
+}
+  /**
+   * Récupérer les statistiques globales des tickets (admin)
+   * GET /tickets/admin/stats
+   */
+  getAdminStats(filters?: { dateDebut?: Date; dateFin?: Date }): Observable<any> {
+    let params = new HttpParams();
+    
+    if (filters?.dateDebut) params = params.set('dateDebut', (filters.dateDebut as any).toString());
+    if (filters?.dateFin) params = params.set('dateFin', (filters.dateFin as any).toString());
+    console.log('📊 Récupération stats admin avec params:', params.toString());
+    return this.http.get(`${this.apiUrl}/admin/stats`, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Assigner un ticket à un admin
+   * PATCH /tickets/:id/assigner
+   */
+  assignTicket(id: string, adminId: string): Observable<Ticket> {
+    return this.http.patch<Ticket>(`${this.apiUrl}/${id}/assigner`, { adminId }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  /**
+   * Exporter les tickets (CSV/Excel)
+   * GET /tickets/export
+   */
+  exportTickets(format: 'csv' | 'excel' = 'csv', filters?: TicketFilters): Observable<Blob> {
+    let params = new HttpParams().set('format', format);
+    
+    if (filters) {
+      if (filters.statut) params = params.set('statut', filters.statut);
+      if (filters.priorite) params = params.set('priorite', filters.priorite);
+      if (filters.boutiqueId) params = params.set('boutiqueId', filters.boutiqueId);
+      if (filters.dateDebut) params = params.set('dateDebut', filters.dateDebut.toISOString());
+      if (filters.dateFin) params = params.set('dateFin', filters.dateFin.toISOString());
+    }
+
+    return this.http.get(`${this.apiUrl}/export`, { 
+      params, 
+      responseType: 'blob' 
+    }).pipe(catchError(this.handleError));
+  }
+
+  // ===== GESTION DES ERREURS =====
+
+  private handleError(error: any): Observable<never> {
+    console.error('❌ Erreur TicketService:', error);
+    let errorMessage = 'Une erreur est survenue';
+    
+    if (error.error?.message) {
+      errorMessage = error.error.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    return throwError(() => new Error(errorMessage));
   }
 
   // ===== MÉTHODES UTILITAIRES =====
 
-  /**
-   * Obtenir la classe CSS pour le badge de statut
-   */
   getStatusBadgeClass(statut: string): string {
     const classes: { [key: string]: string } = {
       'OUVERT': 'bg-warning text-dark',
@@ -214,9 +456,6 @@ export class TicketService {
     return classes[statut] || 'bg-secondary text-white';
   }
 
-  /**
-   * Obtenir la classe CSS pour le badge de priorité
-   */
   getPriorityBadgeClass(priorite: string): string {
     const classes: { [key: string]: string } = {
       'BASSE': 'bg-secondary text-white',
@@ -227,9 +466,6 @@ export class TicketService {
     return classes[priorite] || 'bg-secondary text-white';
   }
 
-  /**
-   * Obtenir le libellé du statut en français
-   */
   getStatusLabel(statut: string): string {
     const labels: { [key: string]: string } = {
       'OUVERT': 'Ouvert',
@@ -239,9 +475,6 @@ export class TicketService {
     return labels[statut] || statut;
   }
 
-  /**
-   * Obtenir le libellé de la priorité en français
-   */
   getPriorityLabel(priorite: string): string {
     const labels: { [key: string]: string } = {
       'BASSE': 'Basse',
@@ -252,9 +485,6 @@ export class TicketService {
     return labels[priorite] || priorite;
   }
 
-  /**
-   * Obtenir l'icône Font Awesome pour le statut
-   */
   getStatusIcon(statut: string): string {
     const icons: { [key: string]: string } = {
       'OUVERT': 'fa-envelope-open',
@@ -264,9 +494,6 @@ export class TicketService {
     return icons[statut] || 'fa-question-circle';
   }
 
-  /**
-   * Obtenir l'icône Font Awesome pour la priorité
-   */
   getPriorityIcon(priorite: string): string {
     const icons: { [key: string]: string } = {
       'BASSE': 'fa-arrow-down',
@@ -275,5 +502,41 @@ export class TicketService {
       'URGENT': 'fa-exclamation-triangle'
     };
     return icons[priorite] || 'fa-flag';
+  }
+
+  /**
+   * Obtenir le libellé du type d'auteur
+   */
+  getAuteurTypeLabel(auteurType: string): string {
+    const labels: { [key: string]: string } = {
+      'boutique': 'Ma boutique',
+      'user': 'Support',
+      'systeme': 'Système'
+    };
+    return labels[auteurType] || auteurType;
+  }
+
+  /**
+   * Obtenir l'avatar/icône pour le type d'auteur
+   */
+  getAuteurTypeIcon(auteurType: string): string {
+    const icons: { [key: string]: string } = {
+      'boutique': 'fa-store',
+      'user': 'fa-user-headset',
+      'systeme': 'fa-robot'
+    };
+    return icons[auteurType] || 'fa-user';
+  }
+
+  /**
+   * Obtenir la classe CSS pour le type d'auteur
+   */
+  getAuteurTypeClass(auteurType: string): string {
+    const classes: { [key: string]: string } = {
+      'boutique': 'boutique-comment',
+      'user': 'support-comment',
+      'systeme': 'system-comment'
+    };
+    return classes[auteurType] || '';
   }
 }

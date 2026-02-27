@@ -22,8 +22,7 @@ export class Login {
   private readonly roleRoutes: { [key: string]: string } = {
     'acheteur': '/boutique/all',
     'boutique': '/boutique/profil',
-    // 'admin': '/admin/dashboard'
-    'admin': '/articles'
+    'admin': '/admin/dashboard'
   };
 
 constructor(

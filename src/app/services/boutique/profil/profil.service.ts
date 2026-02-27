@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 
 export interface Boutique {
-  _id?: string;
+  _id?: string ;
   profil_photo?: string | null;
   slogan?: string | null;
   condition_vente?: string | null;
@@ -26,6 +26,8 @@ export interface Categorie {
   _id: string;
   nom: string;
   valide: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Box {
@@ -45,6 +47,9 @@ export class ProfilService {
 
   constructor(private http: HttpClient) { }
 
+  toggleBoutiqueActive(boutiqueId: string): Observable<any> {
+  return this.http.patch(`${this.apiUrl}/${boutiqueId}/toggle`, {});
+}
   // Vérifier si le responsable a une boutique
   checkResponsableBoutique(responsableId: string): Observable<any> {
     return this.http.get(`${this.apiUrl}/check-responsable/${responsableId}`);

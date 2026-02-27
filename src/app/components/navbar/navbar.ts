@@ -213,13 +213,20 @@ export class NavbarComponent implements OnInit, OnDestroy {
             exact: true,
           },
           {
+            label:'Categories',
+            route:'/admin/categories',
+            icon:'tags',
+            exact:true,
+          },
+          {
             label: 'Administration',
             icon: 'crown',
             exact: false,
             children: [
-              { label: 'Boutiques', route: '/admin/clients', icon: 'users', exact: false },
-              { label: 'Tickets', route: '/admin/Tickets', icon: 'comments', exact: false },
-              { label: 'Aide', route: '/admin/help', icon: 'question-circle', exact: false },
+              { label: 'Boutiques', route: '/admin/boutique', icon: 'shop', exact: false },
+              { label: 'Box', route: '/admin/clients', icon: 'box', exact: false },
+              { label: 'Tickets', route: '/admin/tickets', icon: 'comments', exact: false },
+              
             ],
           },
           { label: 'Sécurité', route: '/admin/security', icon: 'lock', exact: false },

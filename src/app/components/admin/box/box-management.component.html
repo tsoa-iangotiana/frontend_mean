@@ -170,13 +170,14 @@
                       <button class="btn btn-outline-primary" 
                               (click)="selectBox(box); $event.stopPropagation()"
                               title="Gérer">
-                        <i class="bi bi-pencil"></i>
+                        <!-- <i class="bi bi-pencil"></i> -->
+                        <span class="d-none d-md-inline">Gérer</span>
                       </button>
                       <button class="btn btn-outline-danger" 
                               *ngIf="box.libre"
                               (click)="deleteBox(box); $event.stopPropagation()"
                               title="Supprimer">
-                        <i class="bi bi-trash"></i>
+                        <span class="d-none d-md-inline">Supprimer</span>
                       </button>
                     </div>
                   </td>

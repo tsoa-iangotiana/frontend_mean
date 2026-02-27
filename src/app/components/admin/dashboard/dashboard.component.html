@@ -1,0 +1,341 @@
+<div class="dashboard-container" *ngIf="!loading; else loadingTemplate">
+
+  <!-- En-tête du dashboard -->
+  <div class="dashboard-header">
+    <h1>Tableau de bord administrateur</h1>
+    <div class="last-update">
+      Dernière mise à jour: {{ lastUpdate | date:'dd/MM/yyyy HH:mm:ss' }}
+      <button (click)="refreshDashboard()" class="btn-refresh">
+        🔄 Rafraîchir
+      </button>
+    </div>
+  </div>
+
+  <!-- Cartes KPI principales -->
+  <div class="kpi-grid">
+    <div class="kpi-card" *ngIf="overviewData">
+      <div class="kpi-title">Boxes</div>
+      <div class="kpi-value">{{ overviewData.boxes.total }}</div>
+      <div class="kpi-details">
+        <span class="success">{{ overviewData.boxes.libres }} libres</span>
+        <span class="warning">{{ overviewData.boxes.occupees }} occupées</span>
+        <span class="info">Taux: {{ overviewData.boxes.taux_occupation }}%</span>
+      </div>
+    </div>
+
+    <div class="kpi-card" *ngIf="overviewData">
+      <div class="kpi-title">Boutiques</div>
+      <div class="kpi-value">{{ overviewData.boutiques.total }}</div>
+      <div class="kpi-details">
+        <span class="success">Actives: {{ overviewData.boutiques.actives }}</span>
+        <span class="danger">Inactives: {{ overviewData.boutiques.inactives }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card" *ngIf="overviewData">
+      <div class="kpi-title">Loyers</div>
+      <div class="kpi-value">{{ overviewData.loyers.mois_en_cours | currency:'EUR' }}</div>
+      <div class="kpi-details">
+        <span class="danger">Retards: {{ overviewData.loyers.nb_en_retard }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card" *ngIf="overviewData">
+      <div class="kpi-title">Commandes (30j)</div>
+      <div class="kpi-value">{{ overviewData.commandes.total_30j }}</div>
+    </div>
+
+    <div class="kpi-card" *ngIf="overviewData">
+      <div class="kpi-title">Tickets</div>
+      <div class="kpi-value">{{ overviewData.tickets.ouverts }}</div>
+      <div class="kpi-details">
+        <span class="danger">Urgents: {{ overviewData.tickets.urgents_non_resolus }}</span>
+      </div>
+    </div>
+
+    <div class="kpi-card" *ngIf="overviewData">
+      <div class="kpi-title">Satisfaction</div>
+      <div class="kpi-value">{{ overviewData.satisfaction.note_moyenne_centre }}/5</div>
+      <div class="kpi-details">
+        <span>{{ overviewData.satisfaction.total_avis }} avis</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Boxes -->
+  <div class="dashboard-section" *ngIf="boxesData">
+    <h2>📦 Statistiques des boxes</h2>
+    <div class="charts-row">
+      <div class="chart-container half">
+        <div id="chart-boxes" class="chart" style="height: 300px;"></div>
+      </div>
+      <div class="stats-container half">
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Numéro</th>
+              <th>Surface</th>
+              <th>Loyer</th>
+              <th>Statut</th>
+              <th>Boutique</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let box of boxesData.detail.slice(0, 5)">
+              <td>{{ box.numero }}</td>
+              <td>{{ box.surface }}m²</td>
+              <td>{{ box.prix_loyer | currency:'EUR' }}</td>
+              <td>
+                <span class="badge" [class.success]="box.libre" [class.danger]="!box.libre">
+                  {{ box.libre ? 'Libre' : 'Occupé' }}
+                </span>
+              </td>
+              <td>{{ box.boutique_actuelle?.nom || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Boutiques -->
+  <div class="dashboard-section" *ngIf="boutiquesData">
+    <h2>🏪 Statistiques des boutiques</h2>
+    <div class="filters">
+      <label>
+        Trier par:
+        <select [(ngModel)]="boutiquesTri" (change)="loadBoutiquesStats()">
+          <option value="note">Note moyenne</option>
+          <option value="commandes">Nombre de commandes</option>
+        </select>
+      </label>
+      <label>
+        Filtrer:
+        <select [(ngModel)]="boutiquesFiltre" (change)="loadBoutiquesStats()">
+          <option value="all">Toutes</option>
+          <option value="true">Actives</option>
+          <option value="false">Inactives</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-container third">
+        <div id="chart-boutiques-status" class="chart" style="height: 300px;"></div>
+      </div>
+      <div class="chart-container third">
+        <div id="chart-boutiques-top" class="chart" style="height: 300px;"></div>
+      </div>
+      <div class="stats-container third">
+        <h3>Top 5 boutiques</h3>
+        <div *ngFor="let boutique of boutiquesData.liste.slice(0, 5)" class="boutique-item">
+          <div class="boutique-info">
+            <span class="boutique-nom">{{ boutique.nom }}</span>
+            <span class="badge" [class.success]="boutique.active" [class.secondary]="!boutique.active">
+              {{ boutique.active ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+          <div class="boutique-stats">
+            <span>⭐ {{ boutique.note_moyenne.toFixed(1) }}</span>
+            <span>📦 {{ boutique.nb_commandes }} commandes</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Finances -->
+  <div class="dashboard-section" *ngIf="financesData">
+    <h2>💰 Statistiques financières</h2>
+    <div class="kpi-row">
+      <div class="kpi-mini">
+        <span>Total période</span>
+        <strong>{{ financesData.total_periode | currency:'EUR' }}</strong>
+      </div>
+      <div class="kpi-mini">
+        <span>Mois en cours</span>
+        <strong>{{ financesData.mois_en_cours | currency:'EUR' }}</strong>
+      </div>
+      <div class="kpi-mini">
+        <span>En retard</span>
+        <strong class="danger">{{ financesData.nb_en_retard }}</strong>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-container half">
+        <div id="chart-finances" class="chart" style="height: 300px;"></div>
+      </div>
+      <div class="stats-container half">
+        <h3>Statuts de paiement</h3>
+        <div *ngFor="let statut of financesData.statut_paiements.slice(0, 5)" class="statut-item">
+          <div class="statut-info">
+            <span>{{ statut.nom }}</span>
+            <span class="badge" [ngClass]="{
+              'success':   statut.statut === 'A_JOUR',
+              'warning':   statut.statut === 'EN_RETARD',
+              'secondary': statut.statut === 'AUCUN_PAIEMENT'
+            }">
+              {{ statut.statut }}
+            </span>
+          </div>
+          <div class="statut-details" *ngIf="statut.date_fin">
+            Échéance: {{ statut.date_fin | date:'dd/MM/yyyy' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Commandes -->
+  <div class="dashboard-section" *ngIf="commandesData">
+    <h2>📋 Statistiques des commandes</h2>
+
+    <div class="charts-row">
+      <div class="chart-container half">
+        <div id="chart-commandes-evo" class="chart" style="height: 300px;"></div>
+      </div>
+      <div class="chart-container half">
+        <div id="chart-commandes-statuts" class="chart" style="height: 300px;"></div>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="stats-container full">
+        <h3>Top boutiques par commandes</h3>
+        <table class="stats-table">
+          <thead>
+            <tr>
+              <th>Boutique</th>
+              <th>Nombre de commandes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let boutique of commandesData.top_boutiques">
+              <td>{{ boutique.nom }}</td>
+              <td>{{ boutique.nb_commandes }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Tickets -->
+  <div class="dashboard-section" *ngIf="ticketsData">
+    <h2>🎫 Tickets de support</h2>
+
+    <div class="filters">
+      <label>
+        Statut:
+        <select [(ngModel)]="ticketsFiltres.statut" (change)="loadTicketsStats()">
+          <option value="TOUS">Tous</option>
+          <option value="OUVERT">Ouvert</option>
+          <option value="EN_COURS">En cours</option>
+          <option value="RESOLU">Résolu</option>
+        </select>
+      </label>
+      <label>
+        Priorité:
+        <select [(ngModel)]="ticketsFiltres.priorite" (change)="loadTicketsStats()">
+          <option value="TOUS">Toutes</option>
+          <option value="BASSE">Basse</option>
+          <option value="MOYENNE">Moyenne</option>
+          <option value="HAUTE">Haute</option>
+          <option value="URGENT">Urgent</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="charts-row">
+      <div class="chart-container half">
+        <div id="chart-tickets-statuts" class="chart" style="height: 300px;"></div>
+      </div>
+      <div class="chart-container half">
+        <div id="chart-tickets-priorites" class="chart" style="height: 300px;"></div>
+      </div>
+    </div>
+
+    <div class="urgent-tickets" *ngIf="ticketsData.tickets_urgents.length > 0">
+      <h3 class="danger">⚠️ Tickets urgents ({{ ticketsData.tickets_urgents.length }})</h3>
+      <div class="tickets-grid">
+        <div *ngFor="let ticket of ticketsData.tickets_urgents" class="ticket-card urgent">
+          <div class="ticket-header">
+            <strong>{{ ticket.boutique.nom }}</strong>
+            <span class="badge danger">{{ ticket.priorite }}</span>
+          </div>
+          <div class="ticket-sujet">{{ ticket.sujet }}</div>
+          <div class="ticket-date">{{ ticket.createdAt | date:'dd/MM/yyyy HH:mm' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section Avis -->
+  <div class="dashboard-section" *ngIf="avisData">
+    <h2>⭐ Avis et satisfaction</h2>
+
+    <div class="charts-row">
+      <div class="chart-container half">
+        <div id="chart-avis" class="chart" style="height: 300px;"></div>
+      </div>
+      <div class="stats-container half">
+        <h3>Top boutiques par note</h3>
+        <div *ngFor="let boutique of avisData.top_boutiques.slice(0, 5)" class="boutique-item">
+          <div class="boutique-info">
+            <span>{{ boutique.nom }}</span>
+            <span class="badge success">Box {{ boutique.box?.numero }}</span>
+          </div>
+          <div class="boutique-stars">
+            ⭐ {{ boutique.note_moyenne.toFixed(1) }}/5
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="recent-avis">
+      <h3>Derniers avis</h3>
+      <div class="avis-grid">
+        <div *ngFor="let avis of avisData.derniers_avis.slice(0, 3)" class="avis-card">
+          <div class="avis-header">
+            <strong>{{ avis.boutique_nom }}</strong>
+            <span class="avis-note">⭐ {{ avis.note }}/5</span>
+          </div>
+          <div class="avis-commentaire" *ngIf="avis.commentaire">
+            "{{ avis.commentaire }}"
+          </div>
+          <div class="avis-footer">
+            <span *ngIf="avis.utilisateur">{{ avis.utilisateur.prenom }} {{ avis.utilisateur.nom }}</span>
+            <span>{{ avis.createdAt | date:'dd/MM/yyyy' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Template de chargement -->
+<ng-template #loadingTemplate>
+  <div class="loading-container">
+    <div class="spinner"></div>
+    <p>Chargement du tableau de bord...</p>
+    <p class="debug-info" *ngIf="debugLogs.length > 0">
+      {{ debugLogs[debugLogs.length - 1] }}
+    </p>
+  </div>
+</ng-template>
+
+<!-- Panneau de débogage -->
+<div class="debug-panel" *ngIf="showDebug">
+  <h3>Logs de débogage</h3>
+  <div class="debug-logs">
+    <div *ngFor="let log of debugLogs" class="debug-log">{{ log }}</div>
+  </div>
+  <button (click)="toggleDebug()">Fermer</button>
+</div>
+
+<!-- Bouton de débogage -->
+<button *ngIf="!showDebug" (click)="toggleDebug()" class="debug-toggle">
+  🐛 Debug
+</button>
