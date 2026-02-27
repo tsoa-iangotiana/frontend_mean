@@ -554,3 +554,24 @@
     justify-content: center;
   }
 }
+
+/* [AJOUT] Ligne frais de livraison */
+.livraison-frais-row {
+  background: #f0f7ff;
+  border-top: 1px dashed #bfdbfe;
+}
+
+.livraison-frais {
+  color: #007bff !important;
+}
+
+/* [AJOUT] Ligne total à payer (avec frais inclus) */
+.livraison-total-row {
+  background: #e8f5e9;
+  border-top: 1px solid #a5d6a7;
+}
+
+.livraison-total {
+  color: #16a34a !important;
+  font-size: 1rem;
+}

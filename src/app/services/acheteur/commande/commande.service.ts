@@ -287,4 +287,19 @@ export class CommandeService {
     return icons[statut] || '•';
   }
 
+  /**
+   * Payer une commande (mettre à jour le statut et enregistrer la livraison si nécessaire)
+   * @param data Données de paiement (sans mode_paiement)
+   * @returns Observable
+   */
+  payerCommande(data: {
+    commandeId: string;
+    livraison?: {
+      adresse: string;
+      distance: number;
+      frais: number;
+    }
+  }): Observable<any> {
+    return this.http.put(`${this.apiUrl}/${data.commandeId}/payer`, data);
+  }
 }

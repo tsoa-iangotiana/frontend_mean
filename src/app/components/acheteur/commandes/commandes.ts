@@ -12,7 +12,13 @@ import { LivraisonCarteComponent } from '../carte/carte/carte';
 interface CommandeLivraison {
   id: string;
   modeLivraison: 'recuperer' | 'livrer' | null;
-  positionLivraison?: {lat: number, lng: number};
+  positionLivraison?: {
+    lat: number;
+    lng: number;
+    adresse?: string;
+    distance?: number;
+    frais?: number;
+  };
 }
 
 @Component({
@@ -96,9 +102,11 @@ export class Commandes implements OnInit, OnDestroy {
   choisirRecuperer(commande: CommandeListe): void {
     console.log('📦 Mode récupérer choisi pour commande:', commande._id);
 
+    // [MODIFIÉ] On réinitialise positionLivraison pour effacer les frais affichés
     this.commandeEnCours = {
       id: commande._id,
-      modeLivraison: 'recuperer'
+      modeLivraison: 'recuperer',
+      positionLivraison: undefined // reset des infos de livraison
     };
 
     this.toastService.show('Mode récupération sélectionné', 'info');
@@ -143,16 +151,24 @@ export class Commandes implements OnInit, OnDestroy {
   /**
    * Position confirmée depuis la carte
    */
-  onPositionConfirmee(event: {lat: number, lng: number, commandeId: string}): void {
+  // Modifier onPositionConfirmee
+  onPositionConfirmee(event: {lat: number, lng: number, commandeId: string, livraison?: {adresse: string, distance: number, frais: number}}): void {
     console.log('📍 Position confirmée:', event);
 
-    // Sauvegarder la position pour cette commande
+    // Sauvegarder la position avec toutes les infos de livraison
     this.commandeEnCours = {
       ...this.commandeEnCours,
-      positionLivraison: {lat: event.lat, lng: event.lng}
+      positionLivraison: {
+        lat: event.lat,
+        lng: event.lng,
+        adresse: event.livraison?.adresse,
+        distance: event.livraison?.distance,
+        frais: event.livraison?.frais
+      }
     };
 
     this.toastService.show('Position de livraison enregistrée', 'success');
+    this.cdr.markForCheck();
   }
 
   payerCommande(commande: CommandeListe): void {
@@ -161,21 +177,66 @@ export class Commandes implements OnInit, OnDestroy {
       return;
     }
 
-     // ✅ Vérifier qu'un mode de livraison a été choisi
+    // ✅ Vérifier qu'un mode de livraison a été choisi pour CETTE commande
     if (this.commandeEnCours.id !== commande._id || !this.commandeEnCours.modeLivraison) {
-      this.toastService.show('Veuillez choisir un mode de réception', 'warning');
+      alert('Veuillez d\'abord choisir un mode de réception (Récupérer ou Livrer)');
       return;
     }
 
-    // TODO: Implémenter la logique de paiement
-    console.log('💰 Paiement de la commande:', commande._id);
-    this.toastService.show('Traitement du paiement en cours...', 'info');
+    // Si mode livraison, vérifier que la position est sélectionnée
+    if (this.commandeEnCours.modeLivraison === 'livrer' && !this.commandeEnCours.positionLivraison) {
+      alert('Veuillez sélectionner une position de livraison sur la carte');
+      return;
+    }
 
-    // Simulation de paiement
-    setTimeout(() => {
-      this.toastService.show('Paiement effectué avec succès !', 'success');
-      this.chargerCommandes(); // Recharger pour voir le nouveau statut
-    }, 2000);
+    // Confirmation native
+    const message = this.commandeEnCours.modeLivraison === 'livrer'
+      ? `Confirmer le paiement de ${this.formatPrice(commande.montant_total)} (dont frais de livraison: ${this.formatPrice(this.commandeEnCours.positionLivraison?.frais || 0)}) ?`
+      : `Confirmer le paiement de ${this.formatPrice(commande.montant_total)} ?`;
+
+    if (!confirm(message)) {
+      return;
+    }
+
+    // Afficher le loading
+    this.loading = true;
+    this.cdr.markForCheck();
+
+    // Préparer les données pour le backend
+    const paiementData: any = {
+      commandeId: commande._id
+    };
+
+    // Ajouter les données de livraison si nécessaire
+    if (this.commandeEnCours.modeLivraison === 'livrer' && this.commandeEnCours.positionLivraison) {
+      paiementData.livraison = {
+        adresse: this.commandeEnCours.positionLivraison.adresse || 'Adresse non spécifiée',
+        distance: this.commandeEnCours.positionLivraison.distance || 0,
+        frais: this.commandeEnCours.positionLivraison.frais || 0
+      };
+    }
+
+    // Appel API pour payer la commande
+    this.commandeService.payerCommande(paiementData).subscribe({
+      next: (response) => {
+        this.loading = false;
+        this.toastService.show('✅ Paiement effectué avec succès !', 'success');
+
+        // Réinitialiser l'état de la commande en cours
+        if (this.commandeEnCours.id === commande._id) {
+          this.commandeEnCours = { id: '', modeLivraison: null };
+        }
+
+        this.chargerCommandes();
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        this.loading = false;
+        console.error('Erreur paiement:', err);
+        this.toastService.show(err.error?.message || '❌ Erreur lors du paiement', 'error');
+        this.cdr.markForCheck();
+      }
+    });
   }
 
   formatPrice(prix: number): string {

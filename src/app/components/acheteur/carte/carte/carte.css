@@ -266,10 +266,34 @@
   color: #0284c7;
 }
 
+/* Ajouter dans carte.css */
+.prix-container {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #dcfce7;
+  border-radius: 6px;
+  padding: 0.25rem 0.6rem;
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}
+
+.prix-text {
+  font-weight: 600;
+  color: #166534;
+  font-size: 0.85rem;
+}
+
 /* Ajustement pour mobile */
 @media (max-width: 500px) {
   .distance-chip {
     flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .prix-container {
+    margin-left: 0;
+    padding: 0.25rem 0.5rem;
   }
 
   .distance-from {

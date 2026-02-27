@@ -16,7 +16,14 @@ import { FormsModule } from '@angular/forms';
 import { environment } from '../../../../../environments/environment';
 
 export interface PositionLivraison {
-  lat: number; lng: number; commandeId: string;
+  lat: number;
+  lng: number;
+  commandeId: string;
+  livraison?: {
+    adresse: string;
+    distance: number;
+    frais: number;
+  };
 }
 
 export type MapMode = 'carte' | 'satellite';
@@ -51,6 +58,8 @@ export class LivraisonCarteComponent implements OnInit, AfterViewInit, OnDestroy
 
   // Ajouter une propriété pour la distance calculée
   distanceCalculee: number | null = null;
+
+  prixLivraison: number | null = null;
 
   private currentLat = -18.8792;
   private currentLng =  47.5079;
@@ -201,6 +210,11 @@ export class LivraisonCarteComponent implements OnInit, AfterViewInit, OnDestroy
       lng
     );
 
+    // Calculer le prix basé sur la distance
+    if (this.distanceCalculee !== null) {
+      this.prixLivraison = this.calculerPrixLivraison(this.distanceCalculee);
+    }
+
     // [AJOUT] Géocodage inverse : lat/lng → adresse lisible via Nominatim
     // Remplit adresseInput automatiquement (que ce soit "Ma position" ou saisie manuelle)
     this.obtenirAdresse(lat, lng);
@@ -228,9 +242,22 @@ export class LivraisonCarteComponent implements OnInit, AfterViewInit, OnDestroy
     navigator.clipboard?.writeText(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
   }
 
+  // Modifier la méthode confirmerPosition
   confirmerPosition(): void {
     if (!this.positionSelectionnee) return;
-    this.positionConfirmee.emit({ ...this.positionSelectionnee, commandeId: this.commandeId });
+
+    // Préparer l'objet de livraison si c'est une livraison (frais > 0 ou distance > 0)
+    const livraisonData = this.prixLivraison !== null && this.distanceCalculee !== null && this.adresseInput ? {
+      adresse: this.adresseInput,
+      distance: this.distanceCalculee,
+      frais: this.prixLivraison
+    } : undefined;
+
+    this.positionConfirmee.emit({
+      ...this.positionSelectionnee,
+      commandeId: this.commandeId,
+      livraison: livraisonData
+    });
     this.fermer();
   }
 
@@ -238,6 +265,7 @@ export class LivraisonCarteComponent implements OnInit, AfterViewInit, OnDestroy
   fermer(): void {
     this.fermee.emit();
     this.distanceCalculee = null;
+    this.prixLivraison = null; // Réinitialiser le prix
   }
 
 
@@ -258,5 +286,14 @@ export class LivraisonCarteComponent implements OnInit, AfterViewInit, OnDestroy
 
   private toRad(valeur: number): number {
     return valeur * Math.PI / 180;
+  }
+
+  // Ajouter cette méthode pour calculer le prix selon la distance
+  private calculerPrixLivraison(distance: number): number {
+    if (distance < 2) return 0;
+    if (distance >= 2 && distance < 5) return 3000;
+    if (distance >= 5 && distance < 10) return 5000;
+    if (distance >= 10 && distance <= 20) return 10000;
+    return 10000; // Au-delà de 20km, on garde le prix max (ou vous pouvez ajuster)
   }
 }
