@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { catchError, Observable, throwError } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { BoutiqueContextService } from '../context/boutique.context.service';
 
@@ -72,6 +72,38 @@ export class PromotionService {
     return this.http.get<Promotion[]>(`${this.apiUrl}/actives`);
   }
 
+   /**
+   * Gestion centralisée des erreurs
+   */
+  private handleError(operation: string) {
+    return (error: any): Observable<never> => {
+      console.error(`❌ Erreur lors de ${operation}:`, error);
+
+      let message = `Erreur lors de ${operation}`;
+      if (error.error?.message) {
+        message = error.error.message;
+      } else if (error.status === 400) {
+        message = 'Requête invalide';
+      } else if (error.status === 404) {
+        message = 'Ressource non trouvée';
+      } else if (error.status === 403) {
+        message = 'Accès non autorisé';
+      }
+
+      return throwError(() => new Error(message));
+    };
+  }
+
+  /**
+   * Promotions actives d'une boutique spécifique (sans context)
+   * @param boutiqueId ID de la boutique
+   */
+  getPromotionsActivesByBoutique(boutiqueId: string): Observable<Promotion[]> {
+    const params = new HttpParams().set('boutiqueId', boutiqueId);
+    return this.http.get<Promotion[]>(`${this.apiUrl}/actives`, { params })
+      .pipe(catchError(this.handleError('chargement des promotions actives')));
+  }
+  
   /**
    * Modifier une promotion
    * PUT /promotions/:id

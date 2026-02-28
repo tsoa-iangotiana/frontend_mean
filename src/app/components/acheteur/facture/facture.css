@@ -1,0 +1,420 @@
+/* ============================================================ */
+/*  facture.css — Factures + Modale PDF                        */
+/* ============================================================ */
+
+.factures-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* ── En-tête ──────────────────────────────────────────────── */
+.factures-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.header-left h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.5rem 0;
+}
+
+.sous-titre {
+  color: #64748b;
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* ── Filtres rapides ──────────────────────────────────────── */
+.filtres-rapides {
+  display: flex;
+  gap: 0.5rem;
+  background: #f8fafc;
+  padding: 0.5rem;
+  border-radius: 12px;
+}
+
+.filtre-btn {
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filtre-btn:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.filtre-btn.active {
+  background: white;
+  color: #2563eb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* ── Grille de factures ───────────────────────────────────── */
+.factures-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ── Carte de facture ─────────────────────────────────────── */
+.facture-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid #e2e8f0;
+}
+
+.facture-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+}
+
+/* ── En-tête de carte ─────────────────────────────────────── */
+.card-header {
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.card-header.statut-payee     { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; }
+.card-header.statut-recuperee { background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; }
+.card-header.statut-livree    { background: linear-gradient(135deg, #059669, #047857); color: white; }
+
+.statut-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.statut-icon  { font-size: 1.2rem; }
+.statut-label { font-weight: 600; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.facture-reference {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  font-family: monospace;
+  background: rgba(255,255,255,0.2);
+  padding: 0.3rem 0.6rem;
+  border-radius: 20px;
+}
+
+/* ── Corps de carte ───────────────────────────────────────── */
+.card-body { padding: 1.5rem; }
+
+.boutique-info, .date-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.boutique-icon, .date-icon { font-size: 1.1rem; opacity: 0.7; }
+.boutique-nom { font-weight: 600; color: #1e293b; }
+.date         { color: #64748b; font-size: 0.95rem; }
+
+/* ── Aperçu produits ──────────────────────────────────────── */
+.produits-apercu {
+  margin: 1.25rem 0;
+  border-top: 1px dashed #e2e8f0;
+  border-bottom: 1px dashed #e2e8f0;
+  padding: 1rem 0;
+}
+
+.produit-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.produit-item:last-child { margin-bottom: 0; }
+
+.produit-image {
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f1f5f9;
+}
+.produit-image img { width: 100%; height: 100%; object-fit: cover; }
+.produit-image.placeholder {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; background: #f1f5f9;
+}
+
+.produit-details { flex: 1; display: flex; justify-content: space-between; align-items: center; }
+.produit-nom      { font-size: 0.95rem; color: #334155; }
+.produit-quantite { font-size: 0.85rem; color: #64748b; background: #f1f5f9; padding: 0.2rem 0.5rem; border-radius: 12px; }
+
+.plus-articles { text-align: center; font-size: 0.85rem; color: #64748b; margin-top: 0.5rem; font-style: italic; }
+
+/* ── Section montant ──────────────────────────────────────── */
+.montant-section {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 1rem; padding-top: 0.5rem;
+}
+.montant-label  { font-size: 0.95rem; color: #64748b; }
+.montant-valeur { font-size: 1.3rem; font-weight: 700; color: #1e293b; }
+
+/* ── Pied de carte ────────────────────────────────────────── */
+.card-footer {
+  padding: 1rem 1.5rem;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-details {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #334155;
+  text-decoration: none;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.btn-details:hover { background: #f1f5f9; border-color: #cbd5e1; }
+
+.btn-pdf {
+  padding: 0.6rem 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 70px;
+  justify-content: center;
+}
+.btn-pdf:hover    { background: #f1f5f9; color: #2563eb; border-color: #2563eb; }
+.btn-pdf:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.pdf-icon { font-size: 1rem; }
+.pdf-text { font-size: 0.85rem; font-weight: 500; }
+
+/* Spinner minuscule dans le bouton PDF */
+.mini-spinner {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ── États chargement / vide ──────────────────────────────── */
+.loading-state { text-align: center; padding: 4rem 2rem; color: #64748b; }
+
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.empty-state {
+  text-align: center; padding: 4rem 2rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 2px dashed #e2e8f0;
+}
+.empty-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
+.empty-state h3 { font-size: 1.3rem; color: #1e293b; margin-bottom: 0.5rem; }
+.empty-state p  { color: #64748b; margin-bottom: 1.5rem; }
+
+.btn-achat {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  background: #2563eb;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-achat:hover { background: #1d4ed8; }
+
+/* ============================================================ */
+/*  MODALE DE PRÉVISUALISATION PDF                             */
+/* ============================================================ */
+
+.pdf-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeOverlay 0.2s ease;
+}
+
+@keyframes fadeOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.pdf-modal {
+  background: white;
+  border-radius: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 860px;
+  height: 90vh;
+  box-shadow: 0 24px 48px rgba(0,0,0,0.25);
+  animation: slideModal 0.25s ease;
+}
+
+@keyframes slideModal {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* ── Header modale ────────────────────────────────────────── */
+.pdf-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+  gap: 1rem;
+  flex-shrink: 0;
+  background: #f8fafc;
+}
+
+.pdf-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.pdf-title-icon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.pdf-modal-title h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.2rem 0;
+}
+
+.pdf-subtitle {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.pdf-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.btn-telecharger {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.25rem;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+}
+.btn-telecharger:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.btn-fermer {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.btn-fermer:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+
+/* ── Corps modale : iframe ────────────────────────────────── */
+.pdf-modal-body {
+  flex: 1;
+  overflow: hidden;
+  background: #e2e8f0;
+  padding: 0;
+}
+
+.pdf-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .factures-header { flex-direction: column; align-items: flex-start; }
+  .filtres-rapides { width: 100%; overflow-x: auto; padding: 0.5rem; }
+  .filtre-btn      { white-space: nowrap; }
+  .factures-grid   { grid-template-columns: 1fr; }
+
+  .pdf-modal { height: 95vh; border-radius: 12px; }
+
+  .pdf-modal-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .pdf-modal-actions { width: 100%; justify-content: flex-end; }
+
+  .btn-telecharger { flex: 1; justify-content: center; }
+}

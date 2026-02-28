@@ -9,6 +9,7 @@ import { environment } from '../../../../environments/environment';
 import { BoutiqueContextService } from '../context/boutique.context.service';
 import { Boutique, Categorie } from '../profil/profil.service';
 import { ToastService } from '../../utils/toast/toast.service';
+import { Promotion } from '../promotion/promotion.service';
 
 export interface Produit {
   _id: string;
@@ -362,5 +363,14 @@ export class ProduitService {
       .pipe(
         catchError(this.handleError('chargement des informations boutique'))
       );
+  }
+
+  // Ajoute cette méthode
+  getPromotionsActivesByBoutique(boutiqueId: string): Observable<Promotion[]> {
+    return this.http.get<Promotion[]>(`${environment.apiUrl}/promotion/actives`, {
+      params: new HttpParams().set('boutiqueId', boutiqueId)
+    }).pipe(
+      catchError(this.handleError('chargement des promotions actives'))
+    );
   }
 }

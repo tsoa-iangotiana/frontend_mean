@@ -33,29 +33,29 @@ export interface PromotionModalData {
       </h5>
       <button type="button" class="btn-close" aria-label="Close" (click)="close()"></button>
     </div>
-    
+
     <div class="modal-body">
       <form [formGroup]="promotionForm">
         <!-- Sélection des produits (toujours visible) -->
         <div class="mb-3">
           <label class="form-label fw-bold">
-            Produits concernés 
+            Produits concernés
             <span class="text-danger">*</span>
             <span class="badge bg-info ms-2">{{ produitsSelectionnes.size }} sélectionné(s)</span>
           </label>
-          
+
           <!-- Barre de recherche rapide -->
           <div class="input-group mb-2">
             <span class="input-group-text"><i class="fas fa-search"></i></span>
-            <input 
-              type="text" 
-              class="form-control" 
-              placeholder="Rechercher un produit..." 
-              [(ngModel)]="searchTerm" 
+            <input
+              type="text"
+              class="form-control"
+              placeholder="Rechercher un produit..."
+              [(ngModel)]="searchTerm"
               (ngModelChange)="filterProduits()"
               [ngModelOptions]="{standalone: true}">
           </div>
-          
+
           <div class="produits-selection border rounded p-3" style="max-height: 250px; overflow-y: auto;">
             <div class="form-check" *ngFor="let produit of filteredProduits">
               <input
@@ -82,7 +82,7 @@ export interface PromotionModalData {
               <p class="text-muted mt-2">Aucun produit trouvé</p>
             </div>
           </div>
-          
+
           <!-- Boutons de sélection rapide -->
           <div class="mt-2 d-flex gap-2 flex-wrap">
             <button type="button" class="btn btn-sm btn-outline-secondary" (click)="selectAllProduits()">
@@ -95,7 +95,7 @@ export interface PromotionModalData {
               <i class="fas fa-check-circle me-1"></i>Produits actifs
             </button>
           </div>
-          
+
           <div class="text-danger small mt-1" *ngIf="produitsSelectionnes.size === 0 && formSubmitted">
             Sélectionnez au moins un produit
           </div>
@@ -135,7 +135,6 @@ export interface PromotionModalData {
                 type="date"
                 class="form-control"
                 formControlName="date_debut">
-              <small class="text-muted">Laissez vide pour commencer immédiatement</small>
             </div>
 
             <!-- Date de fin (optionnelle) -->
@@ -145,7 +144,6 @@ export interface PromotionModalData {
                 type="date"
                 class="form-control"
                 formControlName="date_fin">
-              <small class="text-muted">Laissez vide pour une promotion permanente</small>
             </div>
           </div>
         </ng-container>
@@ -156,7 +154,7 @@ export interface PromotionModalData {
           <strong>Aperçu:</strong>
           <ul class="mb-0 mt-1">
             <li *ngFor="let produit of getPreviewProduits()">
-              {{ produit.nom }}: 
+              {{ produit.nom }}:
               <span class="text-decoration-line-through">{{ formatPrix(produit.prix) }}</span>
               → <span class="text-success fw-bold">{{ formatPrix(produit.prixPromo) }}</span>
             </li>
@@ -185,10 +183,10 @@ export interface PromotionModalData {
 
     <div class="modal-footer d-flex justify-content-between">
       <div>
-        <button 
-          *ngIf="isEditing && getModalMode() !== 'manage'" 
-          type="button" 
-          class="btn btn-outline-danger me-2" 
+        <button
+          *ngIf="isEditing && getModalMode() !== 'manage'"
+          type="button"
+          class="btn btn-outline-danger me-2"
           (click)="confirmDelete()">
           <i class="fas fa-trash me-2"></i>
           Supprimer la promotion
@@ -199,9 +197,9 @@ export interface PromotionModalData {
           <i class="fas fa-times me-2"></i>
           Annuler
         </button>
-        <button 
-          type="button" 
-          class="btn btn-primary" 
+        <button
+          type="button"
+          class="btn btn-primary"
           (click)="save()"
           [disabled]="(promotionForm.invalid && getModalMode() !== 'manage') || produitsSelectionnes.size === 0">
           <i class="fas fa-save me-2"></i>
@@ -286,7 +284,7 @@ export class PromotionModalComponent implements OnInit {
   private initializeForm(): void {
     this.produitsSelectionnes.clear();
     this.formSubmitted = false;
-    
+
     if (this.isEditing && this.data.promotion) {
       // Mode édition
       this.promotionForm.patchValue({
@@ -317,8 +315,8 @@ export class PromotionModalComponent implements OnInit {
       this.filteredProduits = this.produits;
     } else {
       const term = this.searchTerm.toLowerCase();
-      this.filteredProduits = this.produits.filter(p => 
-        p.nom.toLowerCase().includes(term) || 
+      this.filteredProduits = this.produits.filter(p =>
+        p.nom.toLowerCase().includes(term) ||
         (p.categorie?.nom && p.categorie.nom.toLowerCase().includes(term))
       );
     }
@@ -353,7 +351,7 @@ export class PromotionModalComponent implements OnInit {
   getPreviewProduits(): any[] {
     const reduction = this.promotionForm.get('reduction')?.value || 0;
     const selectedIds = Array.from(this.produitsSelectionnes);
-    
+
     return selectedIds.slice(0, 3).map(id => {
       const produit = this.produits.find(p => p._id === id);
       return {
@@ -365,11 +363,11 @@ export class PromotionModalComponent implements OnInit {
   }
 
   formatPrix(prix: number): string {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0
-    }).format(prix);
+    return new Intl.NumberFormat('fr-MG', {
+    style: 'currency',
+    currency: 'MGA',
+    minimumFractionDigits: 0
+  }).format(prix);
   }
 
   formatDate(date: Date): string {
@@ -410,7 +408,7 @@ export class PromotionModalComponent implements OnInit {
 
   save(): void {
     this.formSubmitted = true;
-    
+
     if (this.produitsSelectionnes.size === 0) {
       return;
     }

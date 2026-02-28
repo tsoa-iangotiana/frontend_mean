@@ -1,0 +1,170 @@
+<!-- facture.html -->
+<div class="factures-container">
+  <!-- En-tête -->
+  <div class="factures-header">
+    <div class="header-left">
+      <h1>Mes factures</h1>
+      <p class="sous-titre" *ngIf="!loading && commandes.length > 0">
+        {{ commandes.length }} facture(s) trouvée(s)
+      </p>
+    </div>
+    <div class="header-right">
+      <div class="filtres-rapides">
+        <button
+          class="filtre-btn"
+          [class.active]="filtreActuel === 'tous'"
+          (click)="filtrerParStatut('tous')">
+          Tous
+        </button>
+        <button
+          class="filtre-btn"
+          [class.active]="filtreActuel === 'PAYEE'"
+          (click)="filtrerParStatut('PAYEE')">
+          Payées
+        </button>
+        <button
+          class="filtre-btn"
+          [class.active]="filtreActuel === 'RECUPEREE'"
+          (click)="filtrerParStatut('RECUPEREE')">
+          Récupérées
+        </button>
+        <button
+          class="filtre-btn"
+          [class.active]="filtreActuel === 'LIVREE'"
+          (click)="filtrerParStatut('LIVREE')">
+          Livrées
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- État de chargement -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement de vos factures...</p>
+  </div>
+
+  <!-- Liste des factures en grille -->
+  <div *ngIf="!loading && commandes.length > 0" class="factures-grid">
+    <div *ngFor="let commande of commandes" class="facture-card">
+      <!-- En-tête de la carte -->
+      <div class="card-header" [class]="getStatutClass(commande.statut)">
+        <div class="statut-badge">
+          <span class="statut-icon">{{ commande.statut_info?.icon || '📄' }}</span>
+          <span class="statut-label">{{ getStatutLabel(commande.statut) }}</span>
+        </div>
+        <span class="facture-reference">#{{ commande._id.slice(-8).toUpperCase() }}</span>
+      </div>
+
+      <!-- Corps de la carte -->
+      <div class="card-body">
+        <!-- Boutique -->
+        <div class="boutique-info">
+          <span class="boutique-icon">🏪</span>
+          <span class="boutique-nom">{{ commande.boutique }}</span>
+        </div>
+
+        <!-- Date -->
+        <div class="date-info">
+          <span class="date-icon">📅</span>
+          <span class="date">{{ commande.date | date:'dd MMM yyyy' }}</span>
+        </div>
+
+        <!-- Aperçu des produits -->
+        <div class="produits-apercu">
+          <div *ngFor="let produit of commande.apercu_produits" class="produit-item">
+            <div class="produit-image" *ngIf="produit.image; else imagePlaceholder">
+              <img [src]="produit.image" [alt]="produit.nom">
+            </div>
+            <ng-template #imagePlaceholder>
+              <div class="produit-image placeholder">
+                <span>📦</span>
+              </div>
+            </ng-template>
+            <div class="produit-details">
+              <span class="produit-nom">{{ produit.nom }}</span>
+              <span class="produit-quantite">x{{ produit.quantite }}</span>
+            </div>
+          </div>
+          <div *ngIf="commande.nombre_articles > 3" class="plus-articles">
+            +{{ commande.nombre_articles - 3 }} autre(s)
+          </div>
+        </div>
+
+        <!-- Montant -->
+        <div class="montant-section">
+          <span class="montant-label">Total</span>
+          <span class="montant-valeur">{{ formatPrice(commande.montant_total) }}</span>
+        </div>
+      </div>
+
+      <!-- Pied de la carte -->
+      <div class="card-footer">
+        <a [routerLink]="['/acheteur/commandes', commande._id]" class="btn-details">
+          Voir détails
+        </a>
+        <button
+          class="btn-pdf"
+          title="Prévisualiser la facture PDF"
+          (click)="ouvrirPreviewPdf(commande)"
+          [disabled]="generatingPdf === commande._id">
+          <span class="pdf-icon">
+            <ng-container *ngIf="generatingPdf !== commande._id">📎</ng-container>
+            <span *ngIf="generatingPdf === commande._id" class="mini-spinner"></span>
+          </span>
+          <span class="pdf-text">PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- État vide -->
+  <div *ngIf="!loading && commandes.length === 0" class="empty-state">
+    <div class="empty-icon">📭</div>
+    <h3>Aucune facture trouvée</h3>
+    <p *ngIf="filtreActuel !== 'tous'">
+      Vous n'avez pas de commandes {{ getStatutLabel(filtreActuel).toLowerCase() }} pour le moment.
+    </p>
+    <p *ngIf="filtreActuel === 'tous'">
+      Vous n'avez pas encore de commandes payées.
+    </p>
+    <button routerLink="/acheteur/boutiques" class="btn-achat">
+      Découvrir les boutiques
+    </button>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!--  MODALE DE PRÉVISUALISATION PDF                              -->
+<!-- ============================================================ -->
+<div class="pdf-modal-overlay" *ngIf="pdfPreviewUrl" (click)="fermerPreview($event)">
+  <div class="pdf-modal" (click)="$event.stopPropagation()">
+
+    <!-- Header modale -->
+    <div class="pdf-modal-header">
+      <div class="pdf-modal-title">
+        <span class="pdf-title-icon">📄</span>
+        <div>
+          <h2>Facture #{{ commandeSelectionnee?._id?.slice(-8)?.toUpperCase() }}</h2>
+          <p class="pdf-subtitle">{{ commandeSelectionnee?.boutique }} · {{ commandeSelectionnee?.date | date:'dd MMMM yyyy' }}</p>
+        </div>
+      </div>
+      <div class="pdf-modal-actions">
+        <button class="btn-fermer" (click)="fermerPreviewDirect()" title="Fermer">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- Iframe de prévisualisation -->
+    <div class="pdf-modal-body">
+      <iframe
+        [src]="pdfPreviewUrl"
+        class="pdf-iframe"
+        frameborder="0"
+        title="Prévisualisation de la facture">
+      </iframe>
+    </div>
+
+  </div>
+</div>

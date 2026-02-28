@@ -1,7 +1,7 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged, forkJoin, takeUntil } from 'rxjs';
 import { RouterModule } from '@angular/router';  // ← IMPORTANT
 
 import { ProduitService, Produit, ProduitsResponse } from '../../../services/boutique/produit/produit.service';
@@ -9,6 +9,17 @@ import { ToastService } from '../../../services/utils/toast/toast.service';
 import { PanierService } from '../../../services/acheteur/panier/panier.service';
 import { ActivatedRoute } from '@angular/router';
 import { Boutique } from '../../../services/boutique/profil/profil.service';
+
+import { PromotionService, Promotion } from '../../../services/boutique/promotion/promotion.service';
+// Interface étendue pour inclure les infos de promo
+interface ProduitWithPromo extends Produit {
+  prixOriginal?: number;
+  prixPromo?: number;
+  reduction?: number;
+  enPromotion?: boolean;
+  promotionId?: string;
+  dateFinPromo?: Date;
+}
 
 @Component({
   selector: 'app-liste-produits-acheteur',
@@ -22,9 +33,11 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
   boutiqueNom?: string;
   boutiqueInfo?: Boutique;
 
-  // Données
-  produits: Produit[] = [];
+  // Données avec promotion
+  produits: ProduitWithPromo[] = [];
+  promotions: Promotion[] = [];
   totalProduits = 0;
+
 
   // Pagination - Style ListeBoutique
   currentPage = 1;
@@ -33,6 +46,7 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
 
   // États
   loading = false;
+  loadingPromos = false;
   error: string | null = null;
   initialLoad = true;
 
@@ -59,6 +73,7 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
     private produitService: ProduitService,
     private toastService: ToastService,
     private panierService: PanierService,
+    private promotionService: PromotionService,
     private route: ActivatedRoute,
     private cdr: ChangeDetectorRef
   ) {}
@@ -76,7 +91,7 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
     console.log('✅ ID boutique récupéré depuis URL:', this.boutiqueId);
 
     this.loadBoutiqueInfo();
-    this.loadProduits();
+    this.loadPromotionsAndProduits();
 
     this.searchSubject.pipe(
       debounceTime(500),
@@ -131,18 +146,101 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
     return this.boutiqueInfo?.categories?.filter((cat: any) => cat.valide) || [];
   }
 
-  loadProduits(): void {
-    console.log('🔵 loadProduits appelé - page:', this.currentPage, 'loading:', this.loading);
-
+  /**
+   * Charger les promotions et les produits en parallèle
+   */
+  private loadPromotionsAndProduits(): void {
     if (!this.boutiqueId) return;
 
-    if (this.loading) {
-      console.log('⏳ Déjà en chargement, ignore cet appel');
-      return;
-    }
+    this.loading = true;
+    this.loadingPromos = true;
+
+    forkJoin({
+      promotions: this.promotionService.getPromotionsActivesByBoutique(this.boutiqueId),
+      produits: this.produitService.getProduitsByBoutique(this.boutiqueId, {
+        page: this.currentPage,
+        limit: this.itemsPerPage,
+        actif: true
+      })
+    }).pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (results) => {
+          this.promotions = results.promotions;
+          this.processProduitsWithPromos(results.produits.produits);
+          this.totalProduits = results.produits.total;
+          this.totalPages = results.produits.totalPages;
+          this.currentPage = results.produits.currentPage;
+          this.loading = false;
+          this.loadingPromos = false;
+          this.initialLoad = false;
+          this.cdr.detectChanges();
+        },
+        error: (err) => {
+          console.error('❌ Erreur chargement données:', err);
+          this.error = 'Impossible de charger les produits';
+          this.loading = false;
+          this.loadingPromos = false;
+          this.initialLoad = false;
+          this.cdr.detectChanges();
+        }
+      });
+  }
+
+  /**
+   * Traiter les produits pour appliquer les promotions
+   */
+  private processProduitsWithPromos(produits: Produit[]): void {
+    // Créer un map des promotions par produit pour un accès rapide
+    const promoMap = new Map<string, Promotion>();
+
+    this.promotions.forEach(promo => {
+      if (promo.produits && Array.isArray(promo.produits)) {
+        promo.produits.forEach(produitId => {
+          // Si le produit a plusieurs promos, on prend la meilleure (réduction la plus élevée)
+          const produitIdStr = typeof produitId === 'string' ? produitId : produitId._id;
+          const existingPromo = promoMap.get(produitIdStr);
+          if (!existingPromo || promo.reduction > existingPromo.reduction) {
+            promoMap.set(produitIdStr, promo);
+          }
+        });
+      }
+    });
+
+    // Enrichir les produits avec les infos de promotion
+    this.produits = produits.map(produit => {
+      const promo = promoMap.get(produit._id);
+
+      if (promo) {
+        const prixOriginal = produit.prix;
+        const prixPromo = produit.prix * (1 - promo.reduction / 100);
+
+        return {
+          ...produit,
+          prixOriginal,
+          prixPromo,
+          reduction: promo.reduction,
+          enPromotion: true,
+          promotionId: promo._id,
+          dateFinPromo: promo.date_fin
+        };
+      }
+
+      return {
+        ...produit,
+        enPromotion: false
+      };
+    });
+
+    console.log('🏷️ Produits avec promotions:', this.produits.filter(p => p.enPromotion).length);
+  }
+
+  /**
+   * Recharger les produits (après filtre ou pagination)
+   */
+  loadProduits(): void {
+    if (!this.boutiqueId || this.loading) return;
 
     this.loading = true;
-    this.error = null;
 
     const params = {
       page: this.currentPage,
@@ -152,49 +250,92 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
       actif: true
     };
 
+    // Recharger les produits mais garder les promotions déjà chargées
     this.produitService.getProduitsByBoutique(this.boutiqueId, params)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: ProduitsResponse) => {
-          console.log('🟢 Réception produits:', response.produits.length);
-          this.produits = response.produits;
-          // 🔍 AJOUTE CE LOG POUR VOIR LES STOCKS
-          console.log('📊 Détail des stocks:', this.produits.map(p => ({
-            nom: p.nom,
-            stock: p.stock,
-            actif: p.actif
-          })));
+          this.processProduitsWithPromos(response.produits);
           this.totalProduits = response.total;
           this.totalPages = response.totalPages;
           this.currentPage = response.currentPage;
           this.loading = false;
-          this.initialLoad = false;
           this.cdr.detectChanges();
-          console.log('✅ Chargement terminé');
         },
         error: (err) => {
-          console.error('🔴 Erreur:', err);
+          console.error('❌ Erreur:', err);
           this.error = 'Impossible de charger les produits';
           this.loading = false;
-          this.initialLoad = false;
           this.cdr.detectChanges();
         }
       });
   }
 
   /**
-   * Getter pour les produits paginés (comme dans ListeBoutique)
+   * Formater le prix avec ou sans promotion
    */
-  get paginatedProduits(): Produit[] {
-    const start = (this.currentPage - 1) * this.itemsPerPage;
-    const end = start + this.itemsPerPage;
-    // console.log('stock', this.produits.map(p => ({ stock: p.stock })));
-    return this.produits.slice(start, end);
+  formatProduitPrice(produit: ProduitWithPromo): string {
+    if (produit.enPromotion && produit.prixPromo) {
+      return this.formatPrice(produit.prixPromo);
+    }
+    return this.formatPrice(produit.prix);
   }
 
   /**
-   * Changement de page (comme dans ListeBoutique)
+   * Obtenir le prix original formaté (pour affichage barré)
    */
+  getPrixOriginalFormatted(produit: ProduitWithPromo): string {
+    if (produit.prixOriginal) {
+      return this.formatPrice(produit.prixOriginal);
+    }
+    return '';
+  }
+
+  /**
+   * Vérifier si un produit est en promotion
+   */
+  isEnPromotion(produit: ProduitWithPromo): boolean {
+    return !!produit.enPromotion;
+  }
+
+  /**
+   * Obtenir le texte de la promotion
+   */
+  getPromotionText(produit: ProduitWithPromo): string {
+    if (produit.reduction) {
+      return `-${produit.reduction}%`;
+    }
+    return '';
+  }
+
+  // Assure-toi de mettre à jour les types dans les méthodes existantes
+  getStockLabel(produit: ProduitWithPromo): string {
+    if (produit.stock <= 0) return 'Rupture de stock';
+    if (produit.stock <= 5) return 'Stock très faible';
+    if (produit.stock <= 10) return 'Stock faible';
+    return 'En stock';
+  }
+
+  getStockClass(produit: ProduitWithPromo): string {
+    if (produit.stock <= 0) return 'stock-rupture';
+    if (produit.stock <= 5) return 'stock-critique';
+    if (produit.stock <= 10) return 'stock-faible';
+    return 'stock-normal';
+  }
+
+  canAddToCart(produit: ProduitWithPromo): boolean {
+    return produit.actif && produit.stock > 0;
+  }
+
+  /**
+   * Getter pour les produits paginés
+   */
+  get paginatedProduits(): ProduitWithPromo[] {
+    const start = (this.currentPage - 1) * this.itemsPerPage;
+    const end = start + this.itemsPerPage;
+    return this.produits.slice(start, end);
+  }
+
   changePage(page: number): void {
     if (page >= 1 && page <= this.totalPages && page !== this.currentPage) {
       this.currentPage = page;
@@ -216,20 +357,15 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
   }
 
   resetFilters(): void {
-    this.filters = {
-      search: '',
-      categorie: ''
-    };
+    this.filters = { search: '', categorie: '' };
     this.currentPage = 1;
     this.loadProduits();
   }
 
-  // Gardé pour compatibilité avec les appels existants
   onPageChange(page: number): void {
     this.changePage(page);
   }
 
-  // Gardé pour compatibilité
   onPageSizeChange(size: number): void {
     if (size !== this.itemsPerPage) {
       this.itemsPerPage = size;
@@ -238,7 +374,7 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
     }
   }
 
-  addToCart(produit: Produit): void {
+  addToCart(produit: ProduitWithPromo): void {
     if (produit.stock <= 0) {
       this.toastService.show('Ce produit n\'est pas disponible', 'warning');
       return;
@@ -247,39 +383,27 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
     if (this.addingToCart.has(produit._id)) return;
 
     this.addingToCart.add(produit._id);
-    this.cdr.detectChanges();
 
-    setTimeout(() => {
-      this.toastService.show(`${produit.nom} ajouté au panier`, 'success');
-      this.addingToCart.delete(produit._id);
-      this.cdr.detectChanges();
-    }, 500);
-  }
-
-  canAddToCart(produit: Produit): boolean {
-    return produit.actif && produit.stock > 0;
-  }
-
-  getStockLabel(produit: Produit): string {
-    if (produit.stock <= 0) return 'Rupture de stock';
-    if (produit.stock <= 5) return 'Stock très faible';
-    if (produit.stock <= 10) return 'Stock faible';
-    return 'En stock';
-  }
-
-  getStockClass(produit: Produit): string {
-    if (produit.stock <= 0) return 'stock-rupture';
-    if (produit.stock <= 5) return 'stock-critique';
-    if (produit.stock <= 10) return 'stock-faible';
-    return 'stock-normal';
+    this.panierService.ajouterProduit(produit._id, 1).subscribe({
+      next: () => {
+        this.toastService.show(`${produit.nom} ajouté au panier`, 'success');
+        this.addingToCart.delete(produit._id);
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.toastService.show(err.message || 'Erreur ajout au panier', 'error');
+        this.addingToCart.delete(produit._id);
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   formatPrice(prix: number): string {
-    return new Intl.NumberFormat('fr-FR', {
-      style: 'currency',
-      currency: 'XOF',
-      minimumFractionDigits: 0
-    }).format(prix);
+    return new Intl.NumberFormat('fr-MG', {
+    style: 'currency',
+    currency: 'MGA',
+    minimumFractionDigits: 0
+  }).format(prix);
   }
 
   getUniteLabel(unite: string): string {

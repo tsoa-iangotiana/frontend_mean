@@ -7,6 +7,7 @@ import {
   Input,
   ChangeDetectorRef,
   ChangeDetectionStrategy,
+  ViewChild,
 } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
@@ -15,7 +16,8 @@ import { AuthService } from '../../services/auth';
 import { Subscription } from 'rxjs';
 import { Boutique, ProfilService } from '../../services/boutique/profil/profil.service';
 import { BoutiqueContextService } from '../../services/boutique/context/boutique.context.service';
-
+import { PanierService } from '../../services/acheteur/panier/panier.service';
+import { SidebarPanier } from '../../components/acheteur/sidebarpanier/sidebarPanier';
 interface NavItem {
   label: string;
   route?: string;
@@ -30,11 +32,14 @@ interface NavItem {
   standalone: true,
   templateUrl: './navbar.html',
   styleUrls: ['./navbar.css'],
-  imports: [CommonModule, RouterModule, NgbModule],
+  imports: [CommonModule, RouterModule, NgbModule, SidebarPanier],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class NavbarComponent implements OnInit, OnDestroy {
   @Input() pageTitle: string = 'Centre Commercial';
+
+  // Dans la classe
+  @ViewChild('panierSidebar') panierSidebar!: SidebarPanier;
 
   isSidebarCollapsed = false;
   isSidebarMobileShow = false;
@@ -49,6 +54,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
   navItems: NavItem[] = [];
   openSubmenus: Set<string> = new Set();
 
+  panierEstVide: boolean = true;
+  nombreArticlesPanier: number = 0;
+
   private subscriptions: Subscription[] = [];
   private isBrowser: boolean;
 
@@ -56,6 +64,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private profilService: ProfilService,
+    private panierService: PanierService,
     private boutiqueContext: BoutiqueContextService,
     private cdr: ChangeDetectorRef,
     @Inject(PLATFORM_ID) private platformId: Object
@@ -102,6 +111,15 @@ export class NavbarComponent implements OnInit, OnDestroy {
       })
     );
 
+    // S'abonner au panier
+    this.subscriptions.push(
+      this.panierService.panier$.subscribe(panier => {
+        this.panierEstVide = !panier || panier.nombre_articles === 0;
+        this.nombreArticlesPanier = panier?.nombre_articles || 0;
+        this.cdr.markForCheck();
+      })
+    );
+
     if (this.isBrowser) {
       this.checkScreenSize();
       window.addEventListener('resize', () => this.checkScreenSize());
@@ -113,6 +131,11 @@ export class NavbarComponent implements OnInit, OnDestroy {
     if (this.isBrowser) {
       window.removeEventListener('resize', () => this.checkScreenSize());
     }
+  }
+
+  openPanierSidebar(event: Event): void {
+    event.preventDefault();
+    this.panierSidebar.open();
   }
 
   private loadUserBoutiques(): void {
@@ -203,7 +226,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
               { label: 'Boutiques', route: '/admin/boutique', icon: 'shop', exact: false },
               { label: 'Box', route: '/admin/clients', icon: 'box', exact: false },
               { label: 'Tickets', route: '/admin/tickets', icon: 'comments', exact: false },
-              
+
             ],
           },
           { label: 'Sécurité', route: '/admin/security', icon: 'lock', exact: false },
@@ -235,7 +258,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
             icon: 'shopping-cart',
             exact: false,
           },
-          { label: 'Location', route: '/boutique/loyer', icon: 'map-marker-alt', exact: false, 
+          { label: 'Location', route: '/boutique/loyer', icon: 'map-marker-alt', exact: false,
             children:[
           {
             label: 'Payer Loyer',
@@ -243,7 +266,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
             icon: 'money-bill-wave',
             exact: false,
           },
-          { 
+          {
             label: 'Historique Paiement',
             route: '/boutique/historique-paiement',
             icon: 'history',
@@ -258,13 +281,18 @@ export class NavbarComponent implements OnInit, OnDestroy {
       case 'acheteur':
         this.navItems = [
           {
+            label: 'Boutiques', route: '/boutique/all', icon : 'store', exact: false,
+          },
+          {
             label: 'Mes Achats',
             icon: 'shopping-cart',
             exact: false,
             children: [
               { label: 'Commandes', route: '/commandes', icon: 'list', exact: false },
-              { label: 'Favoris', route: '/favoris', icon: 'heart', exact: false },
             ],
+          },
+          {
+            label: 'Factures', route: '/acheteur/factures', icon : 'receipt', exact: false,
           },
         ];
         break;
