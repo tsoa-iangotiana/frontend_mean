@@ -6,7 +6,7 @@ import { Subject, takeUntil } from 'rxjs';
 
 import { CommandeService, CommandesResponse, CommandesFilters, CommandeListe } from '../../../services/acheteur/commande/commande.service';
 import { ToastService } from '../../../services/utils/toast/toast.service';
-import { LivraisonCarteComponent } from '../carte/carte/carte';
+import { LivraisonCarteComponent } from '../carte/carte';
 
 // Interface pour suivre le mode de livraison de chaque commande
 interface CommandeLivraison {

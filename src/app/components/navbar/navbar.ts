@@ -226,7 +226,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
               { label: 'Boutiques', route: '/admin/boutique', icon: 'shop', exact: false },
               { label: 'Box', route: '/admin/clients', icon: 'box', exact: false },
               { label: 'Tickets', route: '/admin/tickets', icon: 'comments', exact: false },
-              
+
             ],
           },
           { label: 'Sécurité', route: '/admin/security', icon: 'lock', exact: false },
@@ -290,6 +290,9 @@ export class NavbarComponent implements OnInit, OnDestroy {
             children: [
               { label: 'Commandes', route: '/commandes', icon: 'list', exact: false },
             ],
+          },
+          {
+            label: 'Factures', route: '/acheteur/factures', icon : 'receipt', exact: false,
           },
         ];
         break;
