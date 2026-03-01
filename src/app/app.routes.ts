@@ -24,35 +24,38 @@ import { CommandeComponent } from './components/boutique/commande/commande.compo
 import { DashboardResponsableComponent } from './components/boutique/dashboard/dashboard.component';
 import { ProfilManagemntComponent } from './components/user/profil/profil-managemnt.component';
 export const routes: Routes = [
-    {path: 'inscription/:role', component : Inscription},
-    {path: 'articles', component : ArticleList, canActivate: [authGuard]},
-    {path: 'login', component: Login},
-    {path: 'inscription', component: ChoixInscription},
-    {path: 'boutique/profil', component: Profil, canActivate: [authGuard]},
-    {path: '', redirectTo: '/login', pathMatch: 'full'},
-    {path: 'boutique/produits', component: ProduitsComponent, canActivate: [authGuard]},
-    {path: 'boutique/loyer',component : PayerLoyerComponent, canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path:'articles', component : ArticleList, canActivate: [authGuard]},
 
-    {path:'boutique/historique-paiement', component:HistoriqueLoyerComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
-    {path:'boutique/all', component:ListeBoutique },
-    {path:'admin/boutique', component:BoutiqueManagementComponent, canActivate: [authGuard]},
-    {path:'admin/tickets', component:TicketManagementComponent, canActivate: [authGuard]},
+    {path:'login', component: Login},
+    {path:'', redirectTo: '/login', pathMatch: 'full'},
+
+    {path:'user/profil',component: ProfilManagemntComponent, canActivate: [authGuard]},
+    {path:'inscription', component: ChoixInscription},
+    {path:'inscription/:role', component : Inscription},
+
     {path:'admin/dashboard', component:DashboardComponent, canActivate: [authGuard]},
-    {path: 'admin/categories', component: CategorieComponent, canActivate: [authGuard]},
-    {path: 'acheteur/:boutiqueId/produits', component: ListeProduitsAcheteurComponent },
-    {path:'boutique/ticket', component: TicketComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
-    {path:'boutique/commande',component: CommandeComponent, canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path:'admin/categories', component: CategorieComponent, canActivate: [authGuard]},
+    {path:'admin/boutique', component:BoutiqueManagementComponent, canActivate: [authGuard]},
+    {path:'admin/clients',component: BoxManagementComponent, canActivate: [authGuard]},
+    {path:'admin/tickets', component:TicketManagementComponent, canActivate: [authGuard]},
+
+    {path:'boutique/all', component:ListeBoutique },
+    {path:'boutique/profil', component: Profil, canActivate: [authGuard]},
     {path:'boutique/dashboard',component: DashboardResponsableComponent, canActivate: [authGuard]},
-    {path: 'admin/clients',component: BoxManagementComponent, canActivate: [authGuard]},
-    {path: 'panier', loadComponent: () => import('./components/acheteur/panier/panier')
-      .then(m => m.PanierComponent),
-      canActivate: [authGuard] // Protection
-    },
-    {path: 'commandes', loadComponent: () => import('./components/acheteur/commandes/commandes')
-      .then(m => m.Commandes),
+    {path:'boutique/commande',component: CommandeComponent, canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path:'boutique/produits', component: ProduitsComponent, canActivate: [authGuard]},
+    {path:'boutique/loyer',component : PayerLoyerComponent, canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path:'boutique/historique-paiement', component:HistoriqueLoyerComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path:'boutique/ticket', component: TicketComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+
+    {path:'acheteur/:boutiqueId/produits', component: ListeProduitsAcheteurComponent },
+    {path:'commandes', loadComponent: () => import('./components/acheteur/commandes/commandes').then(m => m.Commandes),
       canActivate: [authGuard]
     },
-    {path: 'user/profil',component: ProfilManagemntComponent, canActivate: [authGuard]},
+    {path:'panier', loadComponent: () => import('./components/acheteur/panier/panier').then(m => m.PanierComponent),
+      canActivate: [authGuard] // Protection
+    },
+    {path:'acheteur/factures',loadComponent: () => import('./components/acheteur/facture/facture').then(m => m.Facture)},
 
     //      {
 //     path: 'admin',
