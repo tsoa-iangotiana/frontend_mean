@@ -96,7 +96,7 @@
 
 /* === Filtres === */
 .filters-section {
-  background: white;
+  background: rgb(26, 24, 24);
   border-radius: var(--radius-lg);
   border: 1px solid var(--gray-200);
   padding: 1.5rem 1.75rem;
@@ -121,15 +121,16 @@
   padding: 0.625rem 1.25rem;
   font-weight: 500;
   border-radius: var(--radius);
-  transition: var(--transition);
+  /* transition: var(--transition); */
 }
 
 .btn-primary {
-  background: var(--primary);
+  /* background: var(--primary); */
   border-color: var(--primary-dark);
 }
 
 .btn-primary:hover {
+  color : grey;
   background: var(--primary-dark);
   border-color: var(--primary-dark);
   transform: translateY(-1px);

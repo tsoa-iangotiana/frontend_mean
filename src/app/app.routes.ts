@@ -20,6 +20,9 @@ import { BoutiqueManagementComponent } from './components/admin/boutique/boutiqu
 import { DashboardComponent } from './components/admin/dashboard/dashboard.component';
 import path from 'path';
 import { CategorieComponent } from './components/admin/categorie/categorie.component';
+import { CommandeComponent } from './components/boutique/commande/commande.component';
+import { DashboardResponsableComponent } from './components/boutique/dashboard/dashboard.component';
+import { ProfilManagemntComponent } from './components/user/profil/profil-managemnt.component';
 export const routes: Routes = [
     {path: 'inscription/:role', component : Inscription},
     {path: 'articles', component : ArticleList, canActivate: [authGuard]},
@@ -38,7 +41,8 @@ export const routes: Routes = [
     {path: 'admin/categories', component: CategorieComponent, canActivate: [authGuard]},
     {path: 'acheteur/:boutiqueId/produits', component: ListeProduitsAcheteurComponent },
     {path:'boutique/ticket', component: TicketComponent , canActivate: [authGuard, BoutiqueSelectionneeGuard]},
-
+    {path:'boutique/commande',component: CommandeComponent, canActivate: [authGuard, BoutiqueSelectionneeGuard]},
+    {path:'boutique/dashboard',component: DashboardResponsableComponent, canActivate: [authGuard]},
     {path: 'admin/clients',component: BoxManagementComponent, canActivate: [authGuard]},
     {path: 'panier', loadComponent: () => import('./components/acheteur/panier/panier')
       .then(m => m.PanierComponent),
@@ -48,6 +52,8 @@ export const routes: Routes = [
       .then(m => m.Commandes),
       canActivate: [authGuard]
     },
+    {path: 'user/profil',component: ProfilManagemntComponent, canActivate: [authGuard]},
+
     //      {
 //     path: 'admin',
 //     loadComponent: () => import('./components/admin/admin.component')

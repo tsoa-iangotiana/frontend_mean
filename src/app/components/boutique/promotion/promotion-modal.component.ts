@@ -8,7 +8,7 @@ export interface PromotionModalData {
   produits: any[];
   isEditing: boolean;
   promotion?: any;
-  mode?: 'create' | 'edit' | 'manage'; // Nouveau mode pour gérer les produits
+  mode?: 'create' | 'edit' | 'manage';
 }
 
 @Component({
@@ -36,7 +36,7 @@ export interface PromotionModalData {
 
     <div class="modal-body">
       <form [formGroup]="promotionForm">
-        <!-- Sélection des produits (toujours visible) -->
+        <!-- Sélection des produits -->
         <div class="mb-3">
           <label class="form-label fw-bold">
             Produits concernés
@@ -44,7 +44,7 @@ export interface PromotionModalData {
             <span class="badge bg-info ms-2">{{ produitsSelectionnes.size }} sélectionné(s)</span>
           </label>
 
-          <!-- Barre de recherche rapide -->
+          <!-- Barre de recherche (désactivée en mode edit) -->
           <div class="input-group mb-2">
             <span class="input-group-text"><i class="fas fa-search"></i></span>
             <input
@@ -53,6 +53,7 @@ export interface PromotionModalData {
               placeholder="Rechercher un produit..."
               [(ngModel)]="searchTerm"
               (ngModelChange)="filterProduits()"
+              [disabled]="getModalMode() === 'edit'"
               [ngModelOptions]="{standalone: true}">
           </div>
 
@@ -63,6 +64,7 @@ export interface PromotionModalData {
                 type="checkbox"
                 [id]="'prod_' + produit._id"
                 [checked]="isProduitSelected(produit._id)"
+                [disabled]="getModalMode() === 'edit'"
                 (change)="toggleProduitSelection(produit._id)">
               <label class="form-check-label d-flex justify-content-between align-items-center" [for]="'prod_' + produit._id">
                 <span>
@@ -83,8 +85,8 @@ export interface PromotionModalData {
             </div>
           </div>
 
-          <!-- Boutons de sélection rapide -->
-          <div class="mt-2 d-flex gap-2 flex-wrap">
+          <!-- Boutons de sélection rapide (cachés en mode edit) -->
+          <div class="mt-2 d-flex gap-2 flex-wrap" *ngIf="getModalMode() !== 'edit'">
             <button type="button" class="btn btn-sm btn-outline-secondary" (click)="selectAllProduits()">
               <i class="fas fa-check-double me-1"></i>Tout sélectionner
             </button>
@@ -94,6 +96,12 @@ export interface PromotionModalData {
             <button type="button" class="btn btn-sm btn-outline-info" (click)="selectActiveOnly()">
               <i class="fas fa-check-circle me-1"></i>Produits actifs
             </button>
+          </div>
+
+          <!-- Message d'info pour le mode edit -->
+          <div class="alert alert-warning mt-2 mb-0" *ngIf="getModalMode() === 'edit'">
+            <i class="fas fa-info-circle me-2"></i>
+            Pour modifier la sélection des produits, utilisez le mode "Gérer les produits".
           </div>
 
           <div class="text-danger small mt-1" *ngIf="produitsSelectionnes.size === 0 && formSubmitted">
@@ -148,7 +156,7 @@ export interface PromotionModalData {
           </div>
         </ng-container>
 
-        <!-- Aperçu (uniquement si réduction définie) -->
+        <!-- Aperçu (visible dans tous les modes) -->
         <div class="alert alert-info" *ngIf="produitsSelectionnes.size > 0 && promotionForm.get('reduction')?.value">
           <i class="fas fa-info-circle me-2"></i>
           <strong>Aperçu:</strong>
@@ -183,14 +191,14 @@ export interface PromotionModalData {
 
     <div class="modal-footer d-flex justify-content-between">
       <div>
-        <button
+        <!-- <button
           *ngIf="isEditing && getModalMode() !== 'manage'"
           type="button"
           class="btn btn-outline-danger me-2"
           (click)="confirmDelete()">
           <i class="fas fa-trash me-2"></i>
           Supprimer la promotion
-        </button>
+        </button> -->
       </div>
       <div>
         <button type="button" class="btn btn-secondary me-2" (click)="close()">
@@ -228,9 +236,19 @@ export interface PromotionModalData {
     .produits-selection .form-check:hover {
       background-color: #e9ecef;
     }
+    .produits-selection .form-check-input:disabled ~ .form-check-label {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+    .produits-selection .form-check-input:disabled {
+      cursor: not-allowed;
+    }
     .produits-selection .form-check-label {
       width: 100%;
       cursor: pointer;
+    }
+    .produits-selection .form-check-input:disabled ~ .form-check-label {
+      cursor: not-allowed;
     }
     .btn-group .btn {
       border-radius: 4px !important;
@@ -327,6 +345,11 @@ export class PromotionModalComponent implements OnInit {
   }
 
   toggleProduitSelection(produitId: string): void {
+    // Ne pas permettre la modification en mode edit
+    if (this.getModalMode() === 'edit') {
+      return;
+    }
+    
     if (this.produitsSelectionnes.has(produitId)) {
       this.produitsSelectionnes.delete(produitId);
     } else {
@@ -335,14 +358,17 @@ export class PromotionModalComponent implements OnInit {
   }
 
   selectAllProduits(): void {
+    if (this.getModalMode() === 'edit') return;
     this.produits.forEach(p => this.produitsSelectionnes.add(p._id));
   }
 
   deselectAllProduits(): void {
+    if (this.getModalMode() === 'edit') return;
     this.produitsSelectionnes.clear();
   }
 
   selectActiveOnly(): void {
+    if (this.getModalMode() === 'edit') return;
     this.produits
       .filter(p => p.actif)
       .forEach(p => this.produitsSelectionnes.add(p._id));
@@ -364,10 +390,10 @@ export class PromotionModalComponent implements OnInit {
 
   formatPrix(prix: number): string {
     return new Intl.NumberFormat('fr-MG', {
-    style: 'currency',
-    currency: 'MGA',
-    minimumFractionDigits: 0
-  }).format(prix);
+      style: 'currency',
+      currency: 'MGA',
+      minimumFractionDigits: 0
+    }).format(prix);
   }
 
   formatDate(date: Date): string {

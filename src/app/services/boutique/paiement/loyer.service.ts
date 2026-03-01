@@ -14,7 +14,7 @@ export interface PaiementLoyer {
 }
 
 export interface SituationLoyer {
-  boutique: string;
+  boutique: any | string;
   box: string;
   loyer_mensuel: number;
   situation: {
