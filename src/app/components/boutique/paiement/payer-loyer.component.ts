@@ -26,7 +26,7 @@ export class PayerLoyerComponent implements OnInit, OnDestroy {
   isSubmitting = false;
   isContextReady = false;
   boutiqueSelectionnee: any = null;
-
+  
   private subscriptions: Subscription = new Subscription();
 
   periodeOptions = [
@@ -243,7 +243,7 @@ export class PayerLoyerComponent implements OnInit, OnDestroy {
     if (!montant && montant !== 0) return '-';
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'XOF',
+      currency: 'MGA',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(montant);
@@ -252,4 +252,5 @@ export class PayerLoyerComponent implements OnInit, OnDestroy {
   getNomBoutique(): string {
     return this.boutiqueSelectionnee?.nom || 'Non sélectionnée';
   }
+  
 }

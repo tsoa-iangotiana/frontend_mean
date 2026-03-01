@@ -1,0 +1,367 @@
+<!-- ══════════════════════════════════════════════════════════════════════
+     MODAL CONFIRMATION
+═══════════════════════════════════════════════════════════════════════ -->
+<ng-template #confirmModal let-modal>
+  <div class="modal-header border-0 pb-0">
+    <div class="d-flex align-items-center gap-3">
+      <div class="modal-icon" [ngClass]="actionSelectionnee === 'livrer' ? 'icon-livrer' : 'icon-recuperer'">
+        <i class="bi" [ngClass]="actionSelectionnee === 'livrer' ? 'bi-truck' : 'bi-check-circle'"></i>
+      </div>
+      <h5 class="modal-title fw-bold mb-0">
+        {{ actionSelectionnee === 'livrer' ? 'Confirmer la livraison' : 'Confirmer la récupération' }}
+      </h5>
+    </div>
+    <button type="button" class="btn-close" (click)="modal.dismiss()" [disabled]="actionLoading"></button>
+  </div>
+
+  <div class="modal-body pt-3" *ngIf="commandeSelectionnee">
+    <div class="modal-recap">
+      <div class="recap-row">
+        <span class="recap-label">Client</span>
+        <span class="recap-value">{{ commandeSelectionnee.utilisateur?.username }}</span>
+      </div>
+      <div class="recap-row">
+        <span class="recap-label">Email</span>
+        <span class="recap-value">{{ commandeSelectionnee.utilisateur?.email }}</span>
+      </div>
+      <div class="recap-row">
+        <span class="recap-label">Montant total</span>
+        <span class="recap-value montant">{{ formatMontant(commandeSelectionnee.montant_total_avec_livraison) }}</span>
+      </div>
+      <div class="recap-row">
+        <span class="recap-label">Articles</span>
+        <span class="recap-value">{{ commandeSelectionnee.nombre_articles }}</span>
+      </div>
+      
+      <div class="recap-divider" *ngIf="commandeSelectionnee.livraison"></div>
+      
+      <div class="recap-row" *ngIf="commandeSelectionnee.livraison">
+        <span class="recap-label">Adresse</span>
+        <span class="recap-value adresse">{{ commandeSelectionnee.livraison.adresse }}</span>
+      </div>
+      <div class="recap-row" *ngIf="commandeSelectionnee.livraison">
+        <span class="recap-label">Distance</span>
+        <span class="recap-value">{{ commandeSelectionnee.livraison.distance.toFixed(1) }} km</span>
+      </div>
+      <div class="recap-row" *ngIf="commandeSelectionnee.livraison">
+        <span class="recap-label">Frais</span>
+        <span class="recap-value frais">{{ formatMontant(commandeSelectionnee.livraison.frais) }}</span>
+      </div>
+    </div>
+    
+    <div class="modal-warning">
+      <i class="bi bi-exclamation-triangle"></i>
+      <span>Cette action est <strong>irréversible</strong></span>
+    </div>
+  </div>
+
+  <div class="modal-footer border-0 pt-0">
+    <button type="button" class="btn btn-outline-secondary px-4" (click)="modal.dismiss()" [disabled]="actionLoading">
+      Annuler
+    </button>
+    <button type="button" class="btn btn-action px-4" [ngClass]="actionSelectionnee === 'livrer' ? 'btn-primary' : 'btn-success'" 
+            (click)="confirmerAction(modal)" [disabled]="actionLoading">
+      <span *ngIf="actionLoading" class="spinner-border spinner-border-sm me-2"></span>
+      <i *ngIf="!actionLoading" class="bi me-2" [ngClass]="actionSelectionnee === 'livrer' ? 'bi-truck' : 'bi-check-circle'"></i>
+      {{ actionLoading ? 'En cours...' : (actionSelectionnee === 'livrer' ? 'Confirmer livraison' : 'Confirmer récupération') }}
+    </button>
+  </div>
+</ng-template>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     PAGE PRINCIPALE
+═══════════════════════════════════════════════════════════════════════ -->
+<div class="commandes-container">
+
+  <!-- ── En-tête ──────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Commandes</h1>
+      <p class="page-subtitle">
+        <span class="badge-attente">{{ totalEnAttente }}</span> en attente de traitement
+      </p>
+    </div>
+    <button class="btn-filtre" [class.active]="filtresActifs" (click)="filtresPanelOuvert = !filtresPanelOuvert">
+      <i class="bi bi-sliders2"></i>
+      <span>Filtres</span>
+      <span class="filtre-indicator" *ngIf="filtresActifs"></span>
+    </button>
+  </div>
+
+  <!-- ── Statistiques ─────────────────────────────────────────────────── -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-receipt"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Total commandes</div>
+        <div class="stat-value">{{ statistiques.total_commandes }}</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-cash-stack"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Chiffre d'affaires</div>
+        <div class="stat-value">{{ formatMontant(statistiques.total_depense_avec_livraison) }}</div>
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-icon">
+        <i class="bi bi-cart"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">Panier moyen</div>
+        <div class="stat-value">{{ formatMontant(statistiques.moyenne_panier) }}</div>
+      </div>
+    </div>
+    
+    <div class="stat-card stat-card-warning">
+      <div class="stat-icon">
+        <i class="bi bi-hourglass-split"></i>
+      </div>
+      <div class="stat-content">
+        <div class="stat-label">En attente</div>
+        <div class="stat-value">{{ statistiques.repartition_statuts.EN_ATTENTE }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Panel filtres ─────────────────────────────────────────────────── -->
+  <div class="filtres-panel" *ngIf="filtresPanelOuvert">
+    <div class="filtres-header">
+      <h3><i class="bi bi-funnel"></i> Filtrer les commandes</h3>
+    </div>
+    
+    <div class="filtres-grid">
+      <div class="filtre-groupe">
+        <label class="filtre-label">Statut</label>
+        <select class="filtre-select" [(ngModel)]="filtreStatut">
+          <option *ngFor="let opt of statutOptions" [value]="opt.value">{{ opt.label }}</option>
+        </select>
+      </div>
+
+      <!-- <div class="filtre-groupe">
+        <label class="filtre-label">Client</label>
+        <input type="text" class="filtre-input" placeholder="ID du client..." [(ngModel)]="filtreUtilisateur" />
+      </div> -->
+
+      <div class="filtre-groupe">
+        <label class="filtre-label">Trier par</label>
+        <select class="filtre-select" [(ngModel)]="filtreTri">
+          <option *ngFor="let opt of triOptions" [value]="opt.value">{{ opt.label }}</option>
+        </select>
+      </div>
+
+      <div class="filtre-groupe">
+        <label class="filtre-label">Date début</label>
+        <input type="date" class="filtre-input" [(ngModel)]="filtreDateDebut" />
+      </div>
+
+      <div class="filtre-groupe">
+        <label class="filtre-label">Date fin</label>
+        <input type="date" class="filtre-input" [(ngModel)]="filtreDateFin" />
+      </div>
+
+      <div class="filtre-groupe">
+        <label class="filtre-label">Prix min (Ar)</label>
+        <input type="number" class="filtre-input" placeholder="0" min="0" [(ngModel)]="filtrePrixMin" />
+      </div>
+
+      <div class="filtre-groupe">
+        <label class="filtre-label">Prix max (Ar)</label>
+        <input type="number" class="filtre-input" placeholder="∞" min="0" [(ngModel)]="filtrePrixMax" />
+      </div>
+    </div>
+
+    <div class="filtres-actions">
+      <button class="btn-reset" (click)="reinitialiserFiltres()">
+        <i class="bi bi-arrow-counterclockwise"></i>
+        Réinitialiser
+      </button>
+      <button class="btn-apply" (click)="appliquerFiltres()">
+        <i class="bi bi-check-lg"></i>
+        Appliquer
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Barre résultats ───────────────────────────────────────────────── -->
+  <div class="resultats-bar">
+    <div class="resultats-count">
+      <strong>{{ totalItems }}</strong> commande(s) trouvée(s)
+    </div>
+    <div class="tri-rapide">
+      <span class="tri-label">Tri :</span>
+      <div class="tri-buttons">
+        <button *ngFor="let opt of triOptions" class="tri-btn" [class.active]="filtreTri === opt.value"
+                (click)="changerTri(opt.value)">
+          {{ opt.label }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Loader ────────────────────────────────────────────────────────── -->
+  <div class="loader-container" *ngIf="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- ── État vide ─────────────────────────────────────────────────────── -->
+  <div class="empty-state" *ngIf="!loading && commandes.length === 0">
+    <i class="bi bi-inbox"></i>
+    <h3>Aucune commande trouvée</h3>
+    <p>Essayez de modifier vos filtres</p>
+    <button class="btn-reset large" (click)="reinitialiserFiltres()">
+      <i class="bi bi-arrow-counterclockwise"></i>
+      Réinitialiser les filtres
+    </button>
+  </div>
+
+  <!-- ── Liste des commandes ───────────────────────────────────────────── -->
+  <div class="commandes-list" *ngIf="!loading && commandes.length > 0">
+    <div *ngFor="let commande of commandes" class="commande-card">
+      
+      <!-- En-tête de la carte -->
+      <div class="card-header">
+        <div class="header-left">
+          <code class="commande-id">#{{ commande._id | slice:0:8 }}</code>
+          <span class="badge-statut" [ngClass]="'statut-' + commande.statut.toLowerCase()">
+            {{ commande.statut_info.label }}
+          </span>
+          <span class="badge-type" [ngClass]="commande.livraison ? 'type-livraison' : 'type-recuperation'">
+            <i class="bi" [ngClass]="commande.livraison ? 'bi-truck' : 'bi-shop'"></i>
+            {{ commande.livraison ? 'Livraison' : 'Récupération' }}
+          </span>
+        </div>
+        <div class="header-right">
+          <i class="bi bi-clock"></i>
+          <span>{{ formatDate(commande.date) }}</span>
+        </div>
+      </div>
+
+      <!-- Corps de la carte -->
+      <div class="card-body">
+        <!-- Informations client et montant -->
+        <div class="client-montant-row">
+          <div class="client-info">
+            <div class="client-avatar">{{ initiales(commande) }}</div>
+            <div class="client-details">
+              <div class="client-name">{{ commande.utilisateur?.username }}</div>
+              <div class="client-email">{{ commande.utilisateur?.email }}</div>
+            </div>
+          </div>
+          
+          <div class="montant-info">
+            <div class="montant-total">{{ formatMontant(commande.montant_total_avec_livraison) }}</div>
+            <div class="montant-detail">
+              <span>Sous-total: {{ formatMontant(commande.montant_total) }}</span>
+              <span *ngIf="commande.livraison" class="frais">
+                + Frais: {{ formatMontant(commande.livraison.frais) }}
+              </span>
+            </div>
+            <div class="articles-count">
+              <i class="bi bi-box-seam"></i>
+              {{ commande.nombre_articles }} article(s)
+            </div>
+          </div>
+        </div>
+
+        <!-- Liste des produits -->
+        <div class="produits-section" *ngIf="commande.apercu_produits?.length">
+          <div class="produits-grid">
+            <div *ngFor="let produit of commande.apercu_produits" class="produit-item">
+              <div class="produit-image">
+                <img *ngIf="produit.image" [src]="produit.image" [alt]="produit.nom" />
+                <div *ngIf="!produit.image" class="image-placeholder">
+                  <i class="bi bi-image"></i>
+                </div>
+              </div>
+              <div class="produit-details">
+                <div class="produit-nom">{{ produit.nom }}</div>
+                <div class="produit-meta">
+                  <span class="produit-quantite">×{{ produit.quantite }}</span>
+                  <span class="produit-prix">{{ formatMontant(produit.prix_unitaire) }}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div *ngIf="commande.apercu_produits.length < commande.nombre_articles" class="produit-plus">
+              <i class="bi bi-plus-circle"></i>
+              +{{ commande.nombre_articles - commande.apercu_produits.length }} autre(s)
+            </div>
+          </div>
+        </div>
+
+        <!-- Informations livraison -->
+        <div class="livraison-section" *ngIf="commande.livraison">
+          <div class="livraison-adresse">
+            <i class="bi bi-geo-alt"></i>
+            <div class="adresse-texte">{{ commande.livraison.adresse }}</div>
+          </div>
+          <div class="livraison-meta">
+            <div class="meta-item">
+              <i class="bi bi-rulers"></i>
+              <span>{{ commande.livraison.distance.toFixed(1) }} km</span>
+            </div>
+            <div class="meta-item">
+              <i class="bi bi-cash"></i>
+              <span class="frais-montant">{{ formatMontant(commande.livraison.frais) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pied de carte avec actions -->
+      <div class="card-footer">
+        <ng-container [ngSwitch]="commande.statut">
+          <!-- Statut PAYEE -->
+          <div *ngSwitchCase="'PAYEE'" class="action-buttons">
+            <button *ngIf="commande.peut_livrer || commande.peut_recuperer" 
+                    class="btn-action" 
+                    [ngClass]="commande.peut_livrer ? 'btn-livrer' : 'btn-recuperer'"
+                    (click)="ouvrirConfirmation(commande, confirmModal)">
+              <i class="bi" [ngClass]="commande.peut_livrer ? 'bi-truck' : 'bi-check-circle'"></i>
+              {{ commande.peut_livrer ? 'Marquer livrée' : 'Marquer récupérée' }}
+            </button>
+          </div>
+
+          <!-- Statut LIVREE / RECUPEREE -->
+          <div *ngSwitchCase="'LIVREE'" class="statut-message success">
+            <i class="bi bi-check-circle-fill"></i>
+            Commande livrée
+          </div>
+          <div *ngSwitchCase="'RECUPEREE'" class="statut-message success">
+            <i class="bi bi-check-circle-fill"></i>
+            Commande récupérée
+          </div>
+
+          <!-- Statut ANNULEE -->
+          <div *ngSwitchCase="'ANNULEE'" class="statut-message error">
+            <i class="bi bi-x-circle-fill"></i>
+            Commande annulée
+          </div>
+
+          <!-- Statut EN_ATTENTE -->
+          <div *ngSwitchCase="'EN_ATTENTE'" class="statut-message warning">
+            <i class="bi bi-hourglass-split"></i>
+            En attente de paiement
+          </div>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Pagination ────────────────────────────────────────────────────── -->
+  <div class="pagination-container" *ngIf="totalPages > 1">
+    <ngb-pagination [(page)]="currentPage" [pageSize]="itemsPerPage" [collectionSize]="totalItems"
+                    [maxSize]="5" [rotate]="true" [boundaryLinks]="true"
+                    (pageChange)="pageChanged($event)">
+    </ngb-pagination>
+  </div>
+
+</div>

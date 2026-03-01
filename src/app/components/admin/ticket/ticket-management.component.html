@@ -10,14 +10,14 @@
     </h2>
     
     <div class="action-buttons">
-      <button class="btn btn-outline-primary me-2" (click)="exportTickets('csv')">
+      <!-- <button class="btn btn-outline-primary me-2" (click)="exportTickets('csv')">
         <i class="fas fa-file-csv me-2"></i>
         CSV
-      </button>
-      <button class="btn btn-outline-success me-2" (click)="exportTickets('excel')">
+      </button> -->
+      <!-- <button class="btn btn-outline-success me-2" (click)="exportTickets('excel')">
         <i class="fas fa-file-excel me-2"></i>
         Excel
-      </button>
+      </button> -->
       <button class="btn btn-primary" (click)="loadTickets()" [disabled]="loading">
         <i class="fas fa-sync-alt me-2" [class.fa-spin]="loading"></i>
         Rafraîchir

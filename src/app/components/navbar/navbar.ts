@@ -229,20 +229,26 @@ export class NavbarComponent implements OnInit, OnDestroy {
 
             ],
           },
-          { label: 'Sécurité', route: '/admin/security', icon: 'lock', exact: false },
+          // { label: 'Sécurité', route: '/admin/security', icon: 'lock', exact: false },
         ];
         break;
 
       case 'boutique':
         const boutiqueId = this.selectedBoutique?._id;
-
+        
         this.navItems = [
-          { label: 'Profil', route: '/boutique/profil', icon: 'user', exact: false },
+           {
+            label: 'Dashboard',
+            route:'/boutique/dashboard',
+            icon: 'tachometer-alt',
+            exact: false,
+          },
           {
             label: 'Ma Boutique',
             icon: 'store',
             exact: false,
             children: [
+              { label: 'Profil', route: '/boutique/profil', icon: 'user', exact: false },
               { label: 'Mes Produits', route: '/boutique/produits', icon: 'box', exact: true },
               // {
               //   label: 'Promotions',
@@ -254,7 +260,7 @@ export class NavbarComponent implements OnInit, OnDestroy {
           },
           {
             label: 'Commandes',
-            route: boutiqueId ? `/boutique/commandes/${boutiqueId}` : '/boutique/commandes',
+            route:'/boutique/commande',
             icon: 'shopping-cart',
             exact: false,
           },
@@ -381,6 +387,10 @@ export class NavbarComponent implements OnInit, OnDestroy {
     this.boutiqueContext.clearBoutiqueSelectionnee();
     this.openSubmenus.clear();
     this.router.navigate(['/login']);
+    this.closeSidebarMobile();
+  }
+  profil(): void {
+    this.router.navigate(['/user/profil']);
     this.closeSidebarMobile();
   }
 }

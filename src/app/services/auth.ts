@@ -8,6 +8,7 @@ export interface User {
   username: string;
   email: string;
   role: string;
+  active: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -182,4 +183,5 @@ export class AuthService {
   getCurrentUser(): User | null {
     return this.currentUserSubject.value;
   }
+  
 }

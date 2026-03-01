@@ -609,6 +609,13 @@ export class ProduitsComponent implements OnInit, OnDestroy {
       this.toastService.show('Aucune boutique sélectionnée', 'error');
       return;
     }
+    console.log('box boutique', boutique.box);
+    if(boutique.box == null){
+      alert('Aucun box sélectionné pour cette boutique. Veuillez contacter l\'administrateur.');
+      this.modalService.dismissAll();
+      return;
+      // this.toastService.show('Aucun box sélectionné pour cette boutique', 'error');
+    }
 
     this.uploadingImage = true;
     const formValue = this.produitForm.value;
@@ -745,7 +752,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
   formatPrix(prix: number): string {
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
-      currency: 'EUR',
+      currency: 'MGA',
       minimumFractionDigits: 0
     }).format(prix);
   }
