@@ -44,11 +44,10 @@
             <!-- Image -->
             <div class="article-image">
               <img
-                [src]="item.produit.images && item.produit.images.length > 0 && item.produit.images[0]
-                      ? item.produit.images[0]
-                      : 'https://res.cloudinary.com/dll5d7pgm/image/upload/v1771525166/boutiques/bphykymmvhbp2kzejmwb.png'"
+                [src]="item.produit.images && item.produit.images.length > 0 && item.produit.images
+                      ? item.produit.images
+                      : 'https://placehold.co/300x300?text=Produit'"
                 [alt]="item.produit.nom"
-                (error)="$event.target.src = 'https://res.cloudinary.com/dll5d7pgm/image/upload/v1771525166/boutiques/bphykymmvhbp2kzejmwb.png'"
                 loading="lazy"
               />
             </div>

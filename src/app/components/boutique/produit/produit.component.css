@@ -352,7 +352,7 @@
     flex: 0 0 50%;
     max-width: 50%;
   }
-  
+
   .produit-image {
     height: 220px;
   }
@@ -362,25 +362,25 @@
   .produits-container {
     padding: 1rem;
   }
-  
+
   .col-md-6 {
     flex: 0 0 100%;
     max-width: 100%;
   }
-  
+
   .produit-image {
     height: 200px;
   }
-  
+
   .card-title {
     font-size: 1.1rem;
     min-height: auto;
   }
-  
+
   .btn-group {
     flex-wrap: wrap;
   }
-  
+
   .btn-group .btn {
     flex: 1 1 calc(50% - 0.25rem);
   }
@@ -390,17 +390,17 @@
   .produit-image {
     height: 180px;
   }
-  
+
   .produit-details .text-primary,
   .produit-details .text-danger {
     font-size: 1.1rem !important;
   }
-  
+
   .badge-group-left,
   .badge-group-right {
     gap: 3px;
   }
-  
+
   .produit-image .badge {
     padding: 0.35rem 0.5rem;
     font-size: 0.7rem;
@@ -449,4 +449,125 @@
 .form-switch .form-check-input:checked {
   background-color: #007bff;
   border-color: #007bff;
+}
+
+/* ===== IMAGE PREVIEW DANS LE MODAL ===== */
+.image-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.image-previews small {
+  width: 100%;           /* ← Force le passage à la ligne */
+  font-size: 0.8rem;
+  color: #6c757d;
+  margin-top: 8px;
+}
+
+.preview-item {
+  position: relative;
+  width: 100px;
+  height: auto;          /* ← Supprimez la hauteur fixe */
+  display: flex;
+  flex-direction: column; /* ← Empile l'image et le small verticalement */
+  align-items: center;
+}
+
+.preview-item img {
+  width: 100px;          /* ← Taille fixe directement sur l'image */
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid #dee2e6;
+  display: block;
+  flex-shrink: 0;        /* ← L'image ne se réduit pas */
+}
+
+.btn-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 0.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn-remove:hover {
+  background: #bd2130;
+}
+
+.preview-item small {
+  display: block;
+  text-align: center;
+  font-size: 0.7rem;
+  color: #e0a800;        /* Couleur warning */
+  font-weight: 500;
+  max-width: 100px;
+  word-wrap: break-word;
+  line-height: 1.2;
+  margin-top: 4px;
+}
+
+/* ===== CAROUSEL ===== */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255,255,255,0.85);
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 3;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+  color: #333;
+}
+
+.carousel-arrow:hover {
+  background: white;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+
+.arrow-left  { left: 8px; }
+.arrow-right { right: 8px; }
+
+/* Petits points indicateurs */
+.carousel-dots {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  z-index: 3;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.dot.active {
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }

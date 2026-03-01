@@ -38,35 +38,40 @@ export class ProduitsComponent implements OnInit, OnDestroy {
   isEditing = false;
   selectedProduit: Produit | null = null;
   currentUser: any = null;
-  
+
   // ===== DONNÉES =====
   produits: Produit[] = [];
   categories: Categorie[] = [];
   filteredCategories: Categorie[] = [];
   promotions: Promotion[] = [];
   produitsWithPromo: Set<string> = new Set(); // IDs des produits avec promo active
-  
+
   // ===== PAGINATION =====
   currentPage = 1;
   itemsPerPage = 20;
   totalItems = 0;
   totalPages = 1;
-  
+
   // ===== FILTRES =====
   searchTerm = '';
   selectedCategorie = '';
   showActifOnly = true;
   showPromoOnly = false;
-  
+
   // ===== FORMULAIRES =====
   produitForm: FormGroup;
   stockForm: FormGroup;
-  
+
   // ===== IMAGES =====
+  // Map pour stocker l'index courant de chaque produit
+  imageIndexMap: { [produitId: string]: number } = {};
+
+  existingImages: string[] = []; // Images déjà uploadées qu'on garde
+
   imagePreviews: string[] = [];
   selectedFiles: File[] = [];
   uploadingImage = false;
-  
+
   // ===== SUBSCRIPTIONS =====
   private subscriptions: Subscription[] = [];
   private searchSubject = new Subject<string>();
@@ -96,9 +101,9 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     if (!this.authService.isBrowser()) {
       return;
     }
-    
+
     await this.authService.initializeAuth();
-    
+
     if (!this.authService.isLoggedIn()) {
       console.log('🔒 Non authentifié - Redirection immédiate vers login');
       this.router.navigate(['/login']);
@@ -234,10 +239,10 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     this.produitService.getProduits(params).subscribe({
       next: (response) => {
         let produits = response.produits;
-        
+
         // Appliquer le filtre promo uniquement si nécessaire
         if (this.showPromoOnly) {
-          produits = produits.filter(p => 
+          produits = produits.filter(p =>
             this.produitsWithPromo.has(p._id)
           );
         }
@@ -303,7 +308,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     });
 
     modalRef.componentInstance.data = modalData;
-    
+
     modalRef.componentInstance.savePromotion.subscribe((promotionData: any) => {
       this.createPromotion(promotionData);
     });
@@ -326,7 +331,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     });
 
     modalRef.componentInstance.data = modalData;
-    
+
     modalRef.componentInstance.savePromotion.subscribe((promotionData: any) => {
       this.updatePromotion(promotion._id, promotionData);
     });
@@ -343,7 +348,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
 
   private createPromotion(promotionData: any): void {
     // Vérifier si des produits sont déjà en promotion
-    const produitsDejaEnPromo = promotionData.produits.filter((id: string) => 
+    const produitsDejaEnPromo = promotionData.produits.filter((id: string) =>
       this.produitsWithPromo.has(id)
     );
 
@@ -352,7 +357,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
         .filter(p => produitsDejaEnPromo.includes(p._id))
         .map(p => p.nom)
         .join(', ');
-      
+
       this.toastService.show(
         `Certains produits sont déjà en promotion: ${nomsProduits}. Veuillez les retirer.`,
         'warning'
@@ -417,7 +422,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
   getProduitPromotion(produitId: string): Promotion | null {
     for (const promo of this.promotions) {
       if (Array.isArray(promo.produits)) {
-        const hasProduit = promo.produits.some(prod => 
+        const hasProduit = promo.produits.some(prod =>
           (typeof prod === 'string' && prod === produitId) ||
           (prod && prod._id === produitId)
         );
@@ -452,7 +457,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     } else if (debut && debut <= now && fin && fin >= now) {
       return 'Active';
     }
-    
+
     return 'Programmée';
   }
 
@@ -480,14 +485,14 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     });
     this.imagePreviews = [];
     this.selectedFiles = [];
-    
+
     this.modalService.open(this.produitModal, { size: 'lg', backdrop: 'static' });
   }
 
   openEditModal(produit: Produit): void {
     this.isEditing = true;
     this.selectedProduit = produit;
-    
+
     this.produitForm.patchValue({
       nom: produit.nom,
       description: produit.description || '',
@@ -497,17 +502,19 @@ export class ProduitsComponent implements OnInit, OnDestroy {
       categorie: typeof produit.categorie === 'string' ? produit.categorie : produit.categorie._id,
       actif: produit.actif
     });
-    
-    this.imagePreviews = produit.images || [];
+
+    // ✅ Séparer clairement existantes et nouvelles
+    this.existingImages = [...(produit.images || [])];
+    this.imagePreviews = [...this.existingImages]; // Copie, pas référence
     this.selectedFiles = [];
-    
+
     this.modalService.open(this.produitModal, { size: 'lg', backdrop: 'static' });
   }
 
   openStockModal(produit: Produit): void {
     this.selectedProduit = produit;
     this.stockForm.reset({ operation: 'ADD' });
-    
+
     this.modalService.open(this.stockModal, { size: 'md' });
   }
 
@@ -517,16 +524,46 @@ export class ProduitsComponent implements OnInit, OnDestroy {
   }
 
   // ===== GESTION DES IMAGES =====
+  getImageIndex(produitId: string): number {
+    return this.imageIndexMap[produitId] || 0;
+  }
+
+  getCurrentImage(produit: any): string {
+    const index = this.getImageIndex(produit._id);
+    return produit.images?.length ? produit.images[index] : 'https://placehold.co/300x300?text=Produit';
+  }
+
+  prevImage(produitId: string, event: Event): void {
+    event.stopPropagation(); // Évite de déclencher d'autres clics
+    const produit = this.produits.find(p => p._id === produitId);
+    if (!produit?.images?.length) return;
+    const current = this.getImageIndex(produitId);
+    this.imageIndexMap[produitId] = (current - 1 + produit.images.length) % produit.images.length;
+  }
+
+  nextImage(produitId: string, event: Event): void {
+    event.stopPropagation();
+    const produit = this.produits.find(p => p._id === produitId);
+    if (!produit?.images?.length) return;
+    const current = this.getImageIndex(produitId);
+    this.imageIndexMap[produitId] = (current + 1) % produit.images.length;
+  }
+
+  setImage(produitId: string, index: number, event: Event): void {
+    event.stopPropagation();
+    this.imageIndexMap[produitId] = index;
+  }
+
   onImagesSelected(event: any): void {
     const files = Array.from(event.target.files) as File[];
-    
+
     files.forEach(file => {
       if (this.isValidImage(file)) {
         this.selectedFiles.push(file);
-        
+
         const reader = new FileReader();
         reader.onload = () => {
-          this.imagePreviews.push(reader.result as string);
+          this.imagePreviews.push(reader.result as string); // base64 ajouté après les URLs
           this.cdr.detectChanges();
         };
         reader.readAsDataURL(file);
@@ -542,10 +579,21 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     return validTypes.includes(file.type) && file.size <= maxSize;
   }
 
+  // Quand on supprime une image dans le preview
   removeImage(index: number): void {
+    const nbExisting = this.existingImages.length;
+
+    if (index < nbExisting) {
+      // ✅ C'est une image existante (URL Cloudinary)
+      this.existingImages.splice(index, 1);
+    } else {
+      // ✅ C'est un nouveau fichier (base64)
+      const fileIndex = index - nbExisting;
+      this.selectedFiles.splice(fileIndex, 1);
+    }
+
+    // Dans tous les cas on retire du preview
     this.imagePreviews.splice(index, 1);
-    this.selectedFiles.splice(index, 1);
-    this.cdr.detectChanges();
   }
 
   // ===== SAUVEGARDE =====
@@ -564,6 +612,7 @@ export class ProduitsComponent implements OnInit, OnDestroy {
 
     this.uploadingImage = true;
     const formValue = this.produitForm.value;
+
     const produitData: ProduitInput = {
       nom: formValue.nom,
       description: formValue.description,
@@ -575,23 +624,26 @@ export class ProduitsComponent implements OnInit, OnDestroy {
     };
 
     if (this.isEditing && this.selectedProduit) {
-      this.produitService.updateProduit(this.selectedProduit._id, produitData)
-        .subscribe({
-          next: (produit) => {
-            if (this.selectedFiles.length > 0) {
-              this.uploadImages(produit._id);
-            } else {
-              this.finishProductSave('Produit mis à jour avec succès');
-            }
-          },
-          error: (error) => {
-            this.uploadingImage = false;
-            console.error('❌ Erreur mise à jour produit:', error);
-            this.toastService.show(error.error?.message || 'Erreur mise à jour produit', 'error');
-            this.cdr.detectChanges();
-          }
-        });
+      // ✅ Tout en une seule requête : données + nouveaux fichiers + images à conserver
+      this.produitService.updateProduit(
+        this.selectedProduit._id,
+        produitData,
+        this.selectedFiles,
+        this.existingImages
+      ).subscribe({
+        next: () => {
+          this.finishProductSave('Produit mis à jour avec succès');
+        },
+        error: (error) => {
+          this.uploadingImage = false;
+          console.error('❌ Erreur mise à jour produit:', error);
+          this.toastService.show(error.error?.message || 'Erreur mise à jour produit', 'error');
+          this.cdr.detectChanges();
+        }
+      });
+
     } else {
+      // ✅ Création : d'abord créer le produit, puis upload les images si besoin
       this.produitService.createProduits([produitData]).subscribe({
         next: (response) => {
           const newProduit = response.produits[0];
@@ -736,7 +788,7 @@ openManagePromotionModal(promotion: Promotion): void {
   });
 
   modalRef.componentInstance.data = modalData;
-  
+
   modalRef.componentInstance.savePromotion.subscribe((promotionData: any) => {
     this.updatePromotionProducts(promotion._id, promotionData.produits);
   });
@@ -757,16 +809,16 @@ private updatePromotionProducts(id: string, produits: string[]): void {
   if (!promotion) return;
 
   const produitsActuels = new Set(
-    Array.isArray(promotion.produits) 
+    Array.isArray(promotion.produits)
       ? promotion.produits.map(p => typeof p === 'string' ? p : p._id)
       : []
   );
-  
+
   const nouveauxProduits = new Set(produits);
-  
+
   // Produits à ajouter (dans nouveaux mais pas dans actuels)
   const aAjouter = Array.from(nouveauxProduits).filter(p => !produitsActuels.has(p));
-  
+
   // Produits à retirer (dans actuels mais pas dans nouveaux)
   const aRetirer = Array.from(produitsActuels).filter(p => !nouveauxProduits.has(p));
 

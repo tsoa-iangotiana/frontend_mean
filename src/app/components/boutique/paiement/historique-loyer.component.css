@@ -81,7 +81,6 @@
 /* ===== CONTENEUR PRINCIPAL ===== */
 .min-h-screen {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
   position: relative;
 }
 
@@ -637,8 +636,6 @@ tr:hover .bg-indigo-100 {
 }
 
 .bg-gray-100 {
-  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-  border: 1px solid #cbd5e1;
   color: #334155;
 }
 
@@ -769,11 +766,11 @@ button:disabled {
   .md\:grid-cols-4 {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .text-3xl {
     font-size: 1.75rem;
   }
-  
+
   .px-6 {
     padding-left: 1rem;
     padding-right: 1rem;
@@ -786,61 +783,61 @@ button:disabled {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .space-x-4 {
     margin-left: 0;
   }
-  
+
   .space-x-4 > * + * {
     margin-left: 0;
     margin-top: 0.75rem;
   }
-  
+
   .justify-between {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .md\:grid-cols-4 {
     grid-template-columns: 1fr;
   }
-  
+
   .text-3xl {
     font-size: 1.5rem;
   }
-  
+
   .text-3xl::after {
     width: 60px;
     height: 3px;
   }
-  
+
   .grid-cols-1 {
     grid-template-columns: 1fr;
   }
-  
+
   .p-6 {
     padding: 1rem;
   }
-  
+
   th, td {
     padding: 0.75rem 1rem;
   }
-  
+
   .h-10, .w-10 {
     height: 2rem;
     width: 2rem;
   }
-  
+
   .ml-4 {
     margin-left: 0.75rem;
   }
-  
+
   /* Tableau scrollable horizontalement */
   .overflow-x-auto {
     margin: 0 -1rem;
     padding: 0 1rem;
   }
-  
+
   table {
     min-width: 600px;
   }
@@ -852,37 +849,37 @@ button:disabled {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
   }
-  
+
   .py-8 {
     padding-top: 1.5rem;
     padding-bottom: 1.5rem;
   }
-  
+
   .text-3xl {
     font-size: 1.25rem;
   }
-  
+
   .p-5 {
     padding: 0.75rem;
   }
-  
+
   .ml-5 {
     margin-left: 0.75rem;
   }
-  
+
   .text-lg {
     font-size: 1rem;
   }
-  
+
   .text-xl {
     font-size: 1.1rem;
   }
-  
+
   th, td {
     padding: 0.5rem 0.75rem;
     font-size: 0.8rem;
   }
-  
+
   .px-6 {
     padding-left: 0.75rem;
     padding-right: 0.75rem;
@@ -896,7 +893,7 @@ button:disabled {
     min-height: auto;
     padding: 1rem;
   }
-  
+
   .bg-indigo-600,
   .bg-indigo-500,
   .bg-green-500,
@@ -906,30 +903,30 @@ button:disabled {
     color: black !important;
     print-color-adjust: exact;
   }
-  
+
   button,
   .filters-card,
   .fa-arrow-left,
   .fa-plus {
     display: none !important;
   }
-  
+
   .shadow-lg {
     box-shadow: none !important;
     border: 1px solid #ddd;
   }
-  
+
   table {
     border-collapse: collapse;
     width: 100%;
   }
-  
+
   th {
     background: #f0f0f0 !important;
     color: black !important;
     font-weight: bold;
   }
-  
+
   td, th {
     border: 1px solid #ddd;
     padding: 0.5rem;

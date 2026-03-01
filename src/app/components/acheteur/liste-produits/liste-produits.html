@@ -95,11 +95,32 @@
         <!-- En-tête de la carte avec image et badges -->
         <div class="card-header">
           <div class="produit-image">
+            <!-- Image active -->
             <img
-              [src]="produit.images[0] || 'https://res.cloudinary.com/dll5d7pgm/image/upload/v1771525166/boutiques/bphykymmvhbp2kzejmwb.png'"
+              [src]="produit.images?.[getImageIndex(produit._id)] || 'https://placehold.co/300x300?text=Produit'"
               [alt]="produit.nom"
-              (error)="$event.target.src = 'https://res.cloudinary.com/dll5d7pgm/image/upload/v1771525166/boutiques/bphykymmvhbp2kzejmwb.png'"
             />
+
+            <!-- Flèches (seulement si plusieurs images) -->
+            <ng-container *ngIf="produit.images.length > 1">
+              <button class="carousel-arrow arrow-left" (click)="prevImage(produit._id, $event)">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="carousel-arrow arrow-right" (click)="nextImage(produit._id, $event)">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+
+              <!-- Points indicateurs -->
+              <div class="carousel-dots">
+                <span
+                  *ngFor="let img of produit.images; let i = index"
+                  class="dot"
+                  [class.active]="getImageIndex(produit._id) === i"
+                  (click)="setImage(produit._id, i, $event)">
+                </span>
+              </div>
+            </ng-container>
+
             <div class="promo-ribbon" *ngIf="produit.enPromotion">
               -{{ produit.reduction }}%
             </div>

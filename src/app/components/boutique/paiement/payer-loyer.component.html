@@ -1,6 +1,6 @@
-<div class="min-h-screen bg-gray-100 py-8">
+<div class="min-h-screen py-8">
   <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-    
+
     <!-- En-tête -->
     <div class="mb-8">
       <h1 class="text-3xl font-bold text-gray-900">Paiement du loyer</h1>
@@ -17,26 +17,26 @@
 
     <!-- Contenu principal -->
     <div *ngIf="!isLoading" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      
+
       <!-- Colonne gauche : Résumé de la situation -->
       <div class="md:col-span-1">
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
           <div class="px-6 py-4 bg-indigo-600">
             <h2 class="text-lg font-semibold text-white">Ma situation</h2>
           </div>
-          
+
           <div class="p-6 space-y-4">
             <!-- Boutique et Box -->
             <div>
               <p class="text-sm text-gray-500">Boutique</p>
               <p class="text-lg font-semibold">{{ situation?.boutique }}</p>
             </div>
-            
+
             <div>
               <p class="text-sm text-gray-500">Box</p>
               <p class="text-lg font-semibold">{{ situation?.box }}</p>
             </div>
-            
+
             <!-- Loyer mensuel -->
             <div>
               <p class="text-sm text-gray-500">Loyer mensuel</p>
@@ -44,7 +44,7 @@
                 {{ formatMontant(situation?.loyer_mensuel || 0) }}
               </p>
             </div>
-            
+
             <!-- Statut -->
             <div>
               <p class="text-sm text-gray-500">Statut</p>
@@ -52,7 +52,7 @@
                 {{ getStatutLibelle() }}
               </span>
             </div>
-            
+
             <!-- Prochaine échéance -->
             <div *ngIf="situation?.situation?.prochaine_echeance">
               <p class="text-sm text-gray-500">Prochaine échéance</p>
@@ -63,7 +63,7 @@
                 {{ situation?.situation?.jours_restants }} jours restants
               </p>
             </div>
-            
+
             <!-- Dernier paiement -->
             <div *ngIf="situation?.situation?.dernier_paiement">
               <p class="text-sm text-gray-500">Dernier paiement</p>
@@ -82,9 +82,9 @@
           <div class="px-6 py-4 bg-indigo-600">
             <h2 class="text-lg font-semibold text-white">Effectuer un paiement</h2>
           </div>
-          
+
           <form [formGroup]="paiementForm" (ngSubmit)="onSubmit()" class="p-6 space-y-6">
-            
+
             <!-- Période -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -99,7 +99,7 @@
                   {{ option.label }}
                 </option>
               </select>
-              <p *ngIf="paiementForm.get('periode')?.invalid && paiementForm.get('periode')?.touched" 
+              <p *ngIf="paiementForm.get('periode')?.invalid && paiementForm.get('periode')?.touched"
                  class="mt-1 text-sm text-red-500">
                 La période est requise
               </p>
@@ -120,7 +120,7 @@
                 />
                 <span class="absolute right-3 top-2 text-gray-500">F CFA</span>
               </div>
-              <p *ngIf="paiementForm.get('montant')?.invalid && paiementForm.get('montant')?.touched" 
+              <p *ngIf="paiementForm.get('montant')?.invalid && paiementForm.get('montant')?.touched"
                  class="mt-1 text-sm text-red-500">
                 Le montant est requis
               </p>

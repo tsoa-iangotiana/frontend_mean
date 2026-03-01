@@ -13,8 +13,6 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { environment } from '../../../../environments/environment';
-
 export interface PositionLivraison {
   lat: number;
   lng: number;
@@ -269,7 +267,11 @@ export class LivraisonCarteComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
 
-  @Input() positionInitiale: { lat: number; lng: number; adresse?: string } = environment.positionInitiale; // Valeur par défaut depuis l'environnement
+  @Input() positionInitiale: { lat: number; lng: number; adresse?: string } = {
+    lat: -18.9544699,
+    lng: 47.530177,
+    adresse: 'Centre commercial'
+  };
 
   // Ajouter cette fonction de calcul de distance (formule de Haversine)
   private calculerDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {

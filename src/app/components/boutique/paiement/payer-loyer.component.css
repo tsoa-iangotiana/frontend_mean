@@ -50,7 +50,6 @@
 /* ===== CONTENEUR PRINCIPAL ===== */
 .min-h-screen {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: relative;
   overflow-x: hidden;
 }
@@ -64,11 +63,6 @@
   bottom: 0;
   background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><path d="M10 10 L90 10 L90 90 L10 90 Z" fill="none" stroke="white" stroke-width="2"/><circle cx="50" cy="50" r="20" fill="none" stroke="white" stroke-width="2"/></svg>') repeat;
   pointer-events: none;
-}
-
-.bg-gray-100 {
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-  position: relative;
 }
 
 /* ===== EN-TÊTE ===== */
@@ -167,16 +161,6 @@
 .rounded-lg {
   border-radius: 1rem;
   overflow: hidden;
-}
-
-.shadow-lg {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s ease;
-}
-
-.shadow-lg:hover {
-  box-shadow: 0 25px 30px -5px rgba(102, 126, 234, 0.3), 0 15px 15px -5px rgba(0, 0, 0, 0.04);
-  transform: translateY(-2px);
 }
 
 /* En-têtes de cartes */
@@ -567,11 +551,11 @@
   .md\:grid-cols-3 {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  
+
   .md\:col-span-1 {
     grid-column: span 1 / span 1;
   }
-  
+
   .md\:col-span-2 {
     grid-column: span 2 / span 2;
   }
@@ -591,26 +575,26 @@
     padding-left: 1rem;
     padding-right: 1rem;
   }
-  
+
   .text-3xl {
     font-size: 1.5rem;
     line-height: 2rem;
   }
-  
+
   .grid {
     gap: 1rem;
   }
-  
+
   .space-x-3 {
     flex-direction: column;
     space-x: 0;
   }
-  
+
   .space-x-3 > * + * {
     margin-left: 0;
     margin-top: 0.5rem;
   }
-  
+
   .px-6 {
     padding-left: 1rem;
     padding-right: 1rem;
@@ -623,17 +607,17 @@
     background: white;
     min-height: auto;
   }
-  
+
   .bg-indigo-600 {
     background: #f0f0f0;
     color: black;
     print-color-adjust: exact;
   }
-  
+
   button {
     display: none;
   }
-  
+
   .shadow-lg {
     box-shadow: none;
   }
