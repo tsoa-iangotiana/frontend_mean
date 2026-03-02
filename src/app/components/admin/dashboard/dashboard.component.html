@@ -34,7 +34,7 @@
 
     <div class="kpi-card" *ngIf="overviewData">
       <div class="kpi-title">Loyers</div>
-      <div class="kpi-value">{{ overviewData.loyers.mois_en_cours | currency:'EUR' }}</div>
+      <div class="kpi-value">{{ formatPrice(overviewData.loyers.mois_en_cours) }}</div>
       <div class="kpi-details">
         <span class="danger">Retards: {{ overviewData.loyers.nb_en_retard }}</span>
       </div>
@@ -84,7 +84,7 @@
             <tr *ngFor="let box of boxesData.detail.slice(0, 5)">
               <td>{{ box.numero }}</td>
               <td>{{ box.surface }}m²</td>
-              <td>{{ box.prix_loyer | currency:'EUR' }}</td>
+              <td>{{ formatPrice(box.prix_loyer) }}</td>
               <td>
                 <span class="badge" [class.success]="box.libre" [class.danger]="!box.libre">
                   {{ box.libre ? 'Libre' : 'Occupé' }}
@@ -150,11 +150,11 @@
     <div class="kpi-row">
       <div class="kpi-mini">
         <span>Total période</span>
-        <strong>{{ financesData.total_periode | currency:'EUR' }}</strong>
+        <strong>{{ formatPrice(financesData.total_periode) }}</strong>
       </div>
       <div class="kpi-mini">
         <span>Mois en cours</span>
-        <strong>{{ financesData.mois_en_cours | currency:'EUR' }}</strong>
+        <strong>{{ formatPrice(financesData.mois_en_cours)  }}</strong>
       </div>
       <div class="kpi-mini">
         <span>En retard</span>
