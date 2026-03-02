@@ -346,7 +346,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
         type: 'category',
         data: this.financesData.evolution_mensuelle.map(m => m.label)
       },
-      yAxis: { type: 'value', axisLabel: { formatter: '{value} €' } },
+      yAxis: { type: 'value', axisLabel: { formatter: '{value} Ar' } },
       series: [{
         name: 'Loyers',
         type: 'line',
@@ -468,4 +468,12 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewChecked {
       }]
     };
   }
+  formatPrice(prix: number): string {
+    return new Intl.NumberFormat('fr-MG', {
+    style: 'currency',
+    currency: 'MGA',
+    minimumFractionDigits: 0
+  }).format(prix);
+  }
+
 }
