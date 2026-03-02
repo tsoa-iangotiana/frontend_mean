@@ -1,118 +1,147 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { UserService } from '../../../services/user/user.service'; // Corriger le chemin
+import { UserService } from '../../../services/user/user.service';
 import { AuthService } from '../../../services/auth';
+
+interface DefaultAccess {
+  role: string;
+  roleClass: string;
+  email: string;
+  password: string;
+}
 
 @Component({
   selector: 'app-login',
-  standalone: true, // ⚠️ Ajouter 'standalone: true'
+  standalone: true,
   imports: [CommonModule, FormsModule],
   templateUrl: './login.html',
-  styleUrls: ['./login.css'], // ⚠️ styleUrl -> styleUrls
+  styleUrls: ['./login.css'],
 })
-export class Login {
-  email = '';
+export class Login implements OnInit {
+  email    = '';
   password = '';
   errorMessage = '';
-  isLoading = false;
+  isLoading    = false;
+  showPassword = false;
 
-  // Mapping des rôles vers les chemins
+  /** 3 accès de démonstration — adapter les valeurs selon votre environnement */
+  defaultAccess: DefaultAccess[] = [
+    {
+      role:      'Admin',
+      roleClass: 'role-admin',
+      email:     'admina@gmail.com',
+      password:  'admina',
+    },
+    {
+      role:      'Boutique',
+      roleClass: 'role-boutique',
+      email:     'henintsoa@gmail.com',
+      password:  '123456',
+    },
+    {
+      role:      'Acheteur',
+      roleClass: 'role-acheteur',
+      email:     'acheteur@test.com',
+      password:  'acheteur',
+    },
+  ];
+
   private readonly roleRoutes: { [key: string]: string } = {
-    'acheteur': '/boutique/all',
-    'boutique': '/boutique/dashboard',
-    'admin': '/admin/dashboard'
+    acheteur: '/boutique/all',
+    boutique: '/boutique/dashboard',
+    admin:    '/admin/dashboard',
   };
 
-constructor(
-  private userService: UserService,
-  public authService: AuthService,   // ← public pour l'utiliser dans le template
-  private router: Router,
-  private cdr : ChangeDetectorRef
-) {}
+  constructor(
+    private userService: UserService,
+    public  authService: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef
+  ) {}
 
-  // ngOnInit(): void {
-  //   // ⚠️ Vérifier si déjà connecté : rediriger vers articles
-  //   if (this.authService.isLoggedIn()) {
-  //     console.log('🔒 Déjà connecté - Redirection vers /articles');
-  //     this.router.navigate(['/articles']);
-  //   }
-  // }
   ngOnInit(): void {
-    // Vérifier si déjà connecté via l'observable
     this.authService.currentUser$.subscribe((user) => {
       if (this.authService.isLoggedIn() && user) {
-        console.log(`🔒 Déjà connecté en tant que ${user.role} - Redirection`);
         this.redirectBasedOnRole(user.role);
       }
     });
   }
 
-  // login.ts - Modifiez la méthode login()
-login() {
-  console.log (this.password);
-  this.userService.login({
-    email: this.email,
-    password: this.password
-  }).subscribe({
-    next: (response) => {
-      console.log('✅ Connexion réussie:', response);
+  /** Remplit les champs avec les identifiants de l'accès sélectionné */
+  fillCredentials(acc: DefaultAccess): void {
+    this.email    = acc.email;
+    this.password = acc.password;
+    this.errorMessage = '';
+  }
 
-      if (response.token) {
-        // Stocker le token
-        this.authService.setToken(response.token);
-        this.authService.setCurrentUser(response.user);
-        console.log('Token stocké:', response.token.substring(0, 20) + '...');
+  login(): void {
+    this.errorMessage = '';
 
-        // VÉRIFIEZ LE TOKEN AVANT REDIRECTION
-        try {
-          // Décoder le token pour vérifier qu'il est valide
-          const payload = JSON.parse(atob(response.token.split('.')[1]));
-          console.log('Token payload:', payload);
-          console.log('Expire le:', new Date(payload.exp * 1000));
+    if (!this.email || !this.password) return;
 
-          // Petit délai avant redirection
-          // Variante A – micro délai
-          setTimeout(() => {
-            // this.router.navigate(['/articles'], { replaceUrl: true });
-            // Rediriger en fonction du rôle
-            this.redirectBasedOnRole(response.user.role);
-            this.cdr.markForCheck();
-          }, 0);
+    this.isLoading = true;
+    this.cdr.markForCheck();
 
-        } catch (error) {
-          console.error('Token invalide:', error);
-          alert('Token invalide reçu du serveur');
-        }
-      }
-    },
-    error: (error) => {
-      console.error('❌ Erreur connexion:', error);
-      alert('Erreur: ' + (error.error?.message || 'Identifiants incorrects'));
-    }
-  });
-}
+    this.userService.login({ email: this.email, password: this.password })
+      .subscribe({
+        next: (response) => {
+          if (!response.token) {
+            this.handleError('Réponse invalide du serveur. Veuillez réessayer.');
+            return;
+          }
 
-private redirectBasedOnRole(role: string): void {
+          try {
+            const payload = JSON.parse(atob(response.token.split('.')[1]));
+            console.log('✅ Connexion réussie — rôle :', payload.role);
+
+            this.authService.setToken(response.token);
+            this.authService.setCurrentUser(response.user);
+
+            setTimeout(() => {
+              this.redirectBasedOnRole(response.user.role);
+              this.cdr.markForCheck();
+            }, 0);
+
+          } catch (err) {
+            this.handleError('Token reçu invalide. Contactez l\'administrateur.');
+          }
+        },
+        error: (err) => {
+          const status = err?.status;
+
+          if (status === 401) {
+            this.handleError('Email ou mot de passe incorrect.');
+          } else if (status === 403) {
+            this.handleError('Votre compte est désactivé. Contactez l\'administrateur.');
+          } else if (status === 0 || status === 503) {
+            this.handleError('Impossible de joindre le serveur. Vérifiez votre connexion.');
+          } else {
+            this.handleError(
+              err?.error?.message || 'Une erreur est survenue. Veuillez réessayer.'
+            );
+          }
+        },
+      });
+  }
+
+  private handleError(message: string): void {
+    this.errorMessage = message;
+    this.isLoading    = false;
+    this.cdr.markForCheck();
+  }
+
+  private redirectBasedOnRole(role: string): void {
     const route = this.roleRoutes[role];
-
     if (route) {
-      console.log(`🔄 Redirection vers ${route} (rôle: ${role})`);
-
-      // Petit délai avant redirection
-      setTimeout(() => {
-        this.router.navigate([route], { replaceUrl: true });
-      }, 100);
+      setTimeout(() => this.router.navigate([route], { replaceUrl: true }), 100);
     } else {
-      console.error(`❌ Rôle inconnu: ${role}`);
-      this.errorMessage = `Rôle utilisateur non reconnu: ${role}`;
-      this.isLoading = false;
+      this.handleError(`Rôle utilisateur non reconnu : ${role}`);
     }
   }
 
-goToRegister(): void {
-  this.router.navigate(['/inscription']);
-}
-
+  goToRegister(): void {
+    this.router.navigate(['/inscription']);
+  }
 }

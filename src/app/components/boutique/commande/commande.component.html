@@ -32,9 +32,9 @@
         <span class="recap-label">Articles</span>
         <span class="recap-value">{{ commandeSelectionnee.nombre_articles }}</span>
       </div>
-      
+
       <div class="recap-divider" *ngIf="commandeSelectionnee.livraison"></div>
-      
+
       <div class="recap-row" *ngIf="commandeSelectionnee.livraison">
         <span class="recap-label">Adresse</span>
         <span class="recap-value adresse">{{ commandeSelectionnee.livraison.adresse }}</span>
@@ -48,7 +48,7 @@
         <span class="recap-value frais">{{ formatMontant(commandeSelectionnee.livraison.frais) }}</span>
       </div>
     </div>
-    
+
     <div class="modal-warning">
       <i class="bi bi-exclamation-triangle"></i>
       <span>Cette action est <strong>irréversible</strong></span>
@@ -59,7 +59,7 @@
     <button type="button" class="btn btn-outline-secondary px-4" (click)="modal.dismiss()" [disabled]="actionLoading">
       Annuler
     </button>
-    <button type="button" class="btn btn-action px-4" [ngClass]="actionSelectionnee === 'livrer' ? 'btn-primary' : 'btn-success'" 
+    <button type="button" class="btn btn-action px-4" [ngClass]="actionSelectionnee === 'livrer' ? 'btn-primary' : 'btn-success'"
             (click)="confirmerAction(modal)" [disabled]="actionLoading">
       <span *ngIf="actionLoading" class="spinner-border spinner-border-sm me-2"></span>
       <i *ngIf="!actionLoading" class="bi me-2" [ngClass]="actionSelectionnee === 'livrer' ? 'bi-truck' : 'bi-check-circle'"></i>
@@ -92,37 +92,37 @@
   <div class="stats-grid">
     <div class="stat-card">
       <div class="stat-icon">
-        <i class="bi bi-receipt"></i>
+        <i class="fa-solid fa-bag-shopping"></i>
       </div>
       <div class="stat-content">
         <div class="stat-label">Total commandes</div>
         <div class="stat-value">{{ statistiques.total_commandes }}</div>
       </div>
     </div>
-    
+
     <div class="stat-card">
       <div class="stat-icon">
-        <i class="bi bi-cash-stack"></i>
+        <i class="fa-solid fa-coins"></i>
       </div>
       <div class="stat-content">
         <div class="stat-label">Chiffre d'affaires</div>
         <div class="stat-value">{{ formatMontant(statistiques.total_depense_avec_livraison) }}</div>
       </div>
     </div>
-    
+
     <div class="stat-card">
       <div class="stat-icon">
-        <i class="bi bi-cart"></i>
+        <i class="fa-solid fa-cart-shopping"></i>
       </div>
       <div class="stat-content">
         <div class="stat-label">Panier moyen</div>
         <div class="stat-value">{{ formatMontant(statistiques.moyenne_panier) }}</div>
       </div>
     </div>
-    
+
     <div class="stat-card stat-card-warning">
       <div class="stat-icon">
-        <i class="bi bi-hourglass-split"></i>
+        <i class="fa-solid fa-hourglass-half"></i>
       </div>
       <div class="stat-content">
         <div class="stat-label">En attente</div>
@@ -136,7 +136,7 @@
     <div class="filtres-header">
       <h3><i class="bi bi-funnel"></i> Filtrer les commandes</h3>
     </div>
-    
+
     <div class="filtres-grid">
       <div class="filtre-groupe">
         <label class="filtre-label">Statut</label>
@@ -225,7 +225,7 @@
   <!-- ── Liste des commandes ───────────────────────────────────────────── -->
   <div class="commandes-list" *ngIf="!loading && commandes.length > 0">
     <div *ngFor="let commande of commandes" class="commande-card">
-      
+
       <!-- En-tête de la carte -->
       <div class="card-header">
         <div class="header-left">
@@ -255,7 +255,7 @@
               <div class="client-email">{{ commande.utilisateur?.email }}</div>
             </div>
           </div>
-          
+
           <div class="montant-info">
             <div class="montant-total">{{ formatMontant(commande.montant_total_avec_livraison) }}</div>
             <div class="montant-detail">
@@ -289,7 +289,7 @@
                 </div>
               </div>
             </div>
-            
+
             <div *ngIf="commande.apercu_produits.length < commande.nombre_articles" class="produit-plus">
               <i class="bi bi-plus-circle"></i>
               +{{ commande.nombre_articles - commande.apercu_produits.length }} autre(s)
@@ -321,8 +321,8 @@
         <ng-container [ngSwitch]="commande.statut">
           <!-- Statut PAYEE -->
           <div *ngSwitchCase="'PAYEE'" class="action-buttons">
-            <button *ngIf="commande.peut_livrer || commande.peut_recuperer" 
-                    class="btn-action" 
+            <button *ngIf="commande.peut_livrer || commande.peut_recuperer"
+                    class="btn-action"
                     [ngClass]="commande.peut_livrer ? 'btn-livrer' : 'btn-recuperer'"
                     (click)="ouvrirConfirmation(commande, confirmModal)">
               <i class="bi" [ngClass]="commande.peut_livrer ? 'bi-truck' : 'bi-check-circle'"></i>
