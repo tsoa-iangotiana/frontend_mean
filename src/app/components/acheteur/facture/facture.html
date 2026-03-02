@@ -86,23 +86,17 @@
               <span class="produit-quantite">x{{ produit.quantite }}</span>
             </div>
           </div>
-          <div *ngIf="commande.nombre_articles > 3" class="plus-articles">
-            +{{ commande.nombre_articles - 3 }} autre(s)
-          </div>
         </div>
 
-        <!-- Montant -->
-        <div class="montant-section">
-          <span class="montant-label">Total</span>
-          <span class="montant-valeur">{{ formatPrice(commande.montant_total) }}</span>
-        </div>
       </div>
 
       <!-- Pied de la carte -->
       <div class="card-footer">
-        <a [routerLink]="['/acheteur/commandes', commande._id]" class="btn-details">
-          Voir détails
-        </a>
+        <div class="montant-section">
+          <span class="montant-label">Total</span>
+          <span class="montant-valeur">{{ formatPrice(commande.montant_total) }}</span>
+        </div>
+
         <button
           class="btn-pdf"
           title="Prévisualiser la facture PDF"

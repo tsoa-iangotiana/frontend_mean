@@ -56,6 +56,8 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
     categorie: ''
   };
 
+  imageIndexMap: { [produitId: string]: number } = {};
+
   // Options de pagination (gardé pour la compatibilité)
   pageSizeOptions = [12, 24, 48, 96];
 
@@ -418,5 +420,30 @@ export class ListeProduitsAcheteurComponent implements OnInit, OnDestroy {
 
   min(a: number, b: number): number {
     return Math.min(a, b);
+  }
+
+  getImageIndex(produitId: string): number {
+    return this.imageIndexMap[produitId] || 0;
+  }
+
+  prevImage(produitId: string, event: Event): void {
+    event.stopPropagation();
+    const produit = this.produits.find(p => p._id === produitId);
+    if (!produit?.images?.length) return;
+    const current = this.getImageIndex(produitId);
+    this.imageIndexMap[produitId] = (current - 1 + produit.images.length) % produit.images.length;
+  }
+
+  nextImage(produitId: string, event: Event): void {
+    event.stopPropagation();
+    const produit = this.produits.find(p => p._id === produitId);
+    if (!produit?.images?.length) return;
+    const current = this.getImageIndex(produitId);
+    this.imageIndexMap[produitId] = (current + 1) % produit.images.length;
+  }
+
+  setImage(produitId: string, index: number, event: Event): void {
+    event.stopPropagation();
+    this.imageIndexMap[produitId] = index;
   }
 }

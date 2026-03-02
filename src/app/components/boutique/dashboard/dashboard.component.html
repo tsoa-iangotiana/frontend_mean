@@ -1,0 +1,380 @@
+<div class="dashboard-wrapper">
+
+  <!-- ═══════════════════════════════════════════════
+       LOADING
+  ════════════════════════════════════════════════ -->
+  <div class="loading-screen" *ngIf="loading">
+    <div class="loader-ring"></div>
+    <p class="loader-label">Chargement du tableau de bord…</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       ERREUR
+  ════════════════════════════════════════════════ -->
+  <div class="error-banner" *ngIf="!loading && errorMessage">
+    <span class="error-icon">⚠</span>
+    <span>{{ errorMessage }}</span>
+    <button class="btn-retry" (click)="rafraichir()">Réessayer</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       CONTENU PRINCIPAL
+  ════════════════════════════════════════════════ -->
+  <ng-container *ngIf="!loading && !errorMessage && dashboard">
+
+    <!-- ── Header ──────────────────────────────── -->
+    <header class="dash-header">
+      <div class="header-left">
+        <p class="header-eyebrow">Tableau de bord global</p>
+        <h1 class="header-title">
+          Bonjour, <span class="accent-gold">{{ currentUser?.username }}</span>
+        </h1>
+        <p class="header-sub">
+          Vue consolidée de vos
+          <strong>{{ dashboard.nb_boutiques }}</strong>
+          boutique{{ dashboard.nb_boutiques > 1 ? 's' : '' }}
+        </p>
+      </div>
+
+      <div class="header-right">
+        <!-- Badges boutiques -->
+        <div class="boutique-chips">
+          <div
+            class="boutique-chip"
+            *ngFor="let b of boutiquesResume"
+            [class.inactive]="!b.active"
+            [title]="b.nom"
+          >
+            <img
+              *ngIf="b.profil_photo"
+              [src]="b.profil_photo"
+              [alt]="b.nom"
+              class="chip-avatar"
+            />
+            <span *ngIf="!b.profil_photo" class="chip-initiale">
+              {{ b.nom.charAt(0).toUpperCase() }}
+            </span>
+            <span class="chip-dot" [class.dot-active]="b.active"></span>
+          </div>
+        </div>
+
+        <button class="btn-refresh" (click)="rafraichir()" title="Actualiser">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6M1 20v-6h6"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ── KPI Cards ───────────────────────────── -->
+    <section class="kpi-grid">
+
+      <div class="kpi-card kpi-primary">
+        <div class="kpi-label">Chiffre d'affaires total</div>
+        <div class="kpi-value">{{ formatMontant(dashboard.resume.ca_total) }}</div>
+        <div class="kpi-sub">
+          <span [class]="evolutionClass(dashboard.periodes.evolution_ca_vs_mois_precedent)">
+            {{ dashboard.periodes.evolution_ca_vs_mois_precedent }}
+          </span>
+          vs mois précédent
+        </div>
+        <div class="kpi-deco"></div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Commandes totales</div>
+        <div class="kpi-value">{{ dashboard.resume.total_commandes }}</div>
+        <div class="kpi-sub">
+          <span class="badge-orange">{{ totalEnAttente }} en attente</span>
+        </div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Panier moyen</div>
+        <div class="kpi-value">{{ formatMontant(dashboard.resume.moyenne_panier) }}</div>
+        <div class="kpi-sub">Toutes boutiques confondues</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Aujourd'hui</div>
+        <div class="kpi-value">{{ formatMontant(dashboard.periodes.aujourd_hui.ca) }}</div>
+        <div class="kpi-sub">{{ dashboard.periodes.aujourd_hui.nb_commandes }} commande(s)</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Cette semaine</div>
+        <div class="kpi-value">{{ formatMontant(dashboard.periodes.semaine.ca) }}</div>
+        <div class="kpi-sub">{{ dashboard.periodes.semaine.nb_commandes }} commande(s)</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Ce mois-ci</div>
+        <div class="kpi-value">{{ formatMontant(dashboard.periodes.mois_en_cours.ca) }}</div>
+        <div class="kpi-sub">{{ dashboard.periodes.mois_en_cours.nb_commandes }} commande(s)</div>
+      </div>
+
+    </section>
+
+    <!-- ── Répartition statuts ─────────────────── -->
+    <section class="section-card statuts-section">
+      <h2 class="section-title">Répartition des commandes</h2>
+
+      <div class="statuts-grid">
+
+        <div class="statut-item">
+          <div class="statut-count count-orange">{{ dashboard.resume.repartition_statuts.EN_ATTENTE }}</div>
+          <div class="statut-label">En attente</div>
+          <div class="statut-bar-track">
+            <div class="statut-bar-fill fill-orange"
+              [style.width.%]="getPct(dashboard.resume.repartition_statuts.EN_ATTENTE)"></div>
+          </div>
+        </div>
+
+        <div class="statut-item">
+          <div class="statut-count count-blue">{{ dashboard.resume.repartition_statuts.PAYEE }}</div>
+          <div class="statut-label">Payées</div>
+          <div class="statut-bar-track">
+            <div class="statut-bar-fill fill-blue"
+              [style.width.%]="getPct(dashboard.resume.repartition_statuts.PAYEE)"></div>
+          </div>
+        </div>
+
+        <div class="statut-item">
+          <div class="statut-count count-green">{{ dashboard.resume.repartition_statuts.LIVREE }}</div>
+          <div class="statut-label">Livrées</div>
+          <div class="statut-bar-track">
+            <div class="statut-bar-fill fill-green"
+              [style.width.%]="getPct(dashboard.resume.repartition_statuts.LIVREE)"></div>
+          </div>
+        </div>
+
+        <div class="statut-item">
+          <div class="statut-count count-teal">{{ dashboard.resume.repartition_statuts.RECUPEREE }}</div>
+          <div class="statut-label">Récupérées</div>
+          <div class="statut-bar-track">
+            <div class="statut-bar-fill fill-teal"
+              [style.width.%]="getPct(dashboard.resume.repartition_statuts.RECUPEREE)"></div>
+          </div>
+        </div>
+
+        <div class="statut-item">
+          <div class="statut-count count-red">{{ dashboard.resume.repartition_statuts.ANNULEE }}</div>
+          <div class="statut-label">Annulées</div>
+          <div class="statut-bar-track">
+            <div class="statut-bar-fill fill-red"
+              [style.width.%]="getPct(dashboard.resume.repartition_statuts.ANNULEE)"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Types livraison vs retrait -->
+      <div class="types-row">
+        <div class="type-pill">
+          <span class="type-dot dot-livraison"></span>
+          <span>Livraison</span>
+          <strong>{{ dashboard.resume.repartition_types.livraison }}</strong>
+        </div>
+        <div class="type-pill">
+          <span class="type-dot dot-retrait"></span>
+          <span>Récupération</span>
+          <strong>{{ dashboard.resume.repartition_types.recuperation }}</strong>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Performance par boutique ───────────── -->
+    <section class="section-card">
+      <h2 class="section-title">Performance par boutique</h2>
+
+      <div class="boutique-table">
+        <div class="btable-head">
+          <span>Boutique</span>
+          <span>CA Total</span>
+          <span>Commandes</span>
+          <span>Panier moyen</span>
+          <span>Part du CA</span>
+          <span>Statut</span>
+        </div>
+
+        <div
+          class="btable-row"
+          *ngFor="let b of performanceParBoutique; let i = index"
+          [class.row-top]="i === 0"
+        >
+          <!-- Boutique -->
+          <div class="btable-boutique">
+            <span class="row-rank">{{ i + 1 }}</span>
+            <img
+              *ngIf="b.photo"
+              [src]="b.photo"
+              [alt]="b.nom"
+              class="btable-avatar"
+            />
+            <span *ngIf="!b.photo" class="btable-initiale">
+              {{ b.nom.charAt(0).toUpperCase() }}
+            </span>
+            <span class="btable-nom">{{ b.nom }}</span>
+          </div>
+
+          <!-- CA -->
+          <div class="btable-ca">{{ formatMontant(b.ca_total) }}</div>
+
+          <!-- Commandes -->
+          <div class="btable-cmds">{{ b.nb_commandes }}</div>
+
+          <!-- Panier moyen -->
+          <div class="btable-panier">{{ formatMontant(b.moyenne_panier) }}</div>
+
+          <!-- Part CA barre -->
+          <div class="btable-part">
+            <div class="part-track">
+              <div
+                class="part-fill"
+                [style.width.%]="partBoutiquePct(b)"
+              ></div>
+            </div>
+            <span class="part-pct">{{ partBoutiquePct(b) }}%</span>
+          </div>
+
+          <!-- Badge actif -->
+          <div>
+            <span class="badge-status" [class.badge-active]="b.active" [class.badge-inactive]="!b.active">
+              {{ b.active ? 'Active' : 'Inactive' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Évolution 30j + Heures de pointe ───── -->
+    <div class="two-col">
+
+      <!-- Évolution journalière -->
+      <section class="section-card">
+        <h2 class="section-title">Évolution — 30 derniers jours</h2>
+
+        <div class="chart-wrap" *ngIf="evolutionJournaliere.length; else noData">
+          <div class="bar-chart">
+            <div
+              class="bar-col"
+              *ngFor="let d of evolutionJournaliere"
+              [title]="d.date + ' — ' + formatMontant(d.ca)"
+            >
+              <div
+                class="bar-fill"
+                [style.height.%]="getBarHeight(d.ca)"
+              ></div>
+              <span class="bar-label">{{ d.date | slice:8:10 }}</span>
+            </div>
+          </div>
+          <div class="chart-legend">
+            <span>CA sur {{ evolutionJournaliere.length }} jours</span>
+            <span class="accent-gold">
+              Max : {{ formatMontant(getMaxCA()) }}
+            </span>
+          </div>
+        </div>
+
+        <ng-template #noData>
+          <div class="empty-state">Aucune donnée pour cette période</div>
+        </ng-template>
+      </section>
+
+      <!-- Heures de pointe -->
+      <section class="section-card">
+        <h2 class="section-title">Heures de pointe</h2>
+        <p class="section-sub" *ngIf="heurePicMax">
+          Pic à <strong class="accent-gold">{{ heurePicMax.heure }}h</strong>
+          — {{ heurePicMax.nb_commandes }} commandes
+        </p>
+
+        <div class="heure-chart" *ngIf="heuresDePointe.length; else noData2">
+          <div
+            class="heure-col"
+            *ngFor="let h of heuresDePointe"
+            [title]="h.heure + 'h — ' + h.nb_commandes + ' commandes'"
+            [class.heure-pic]="heurePicMax && h.heure === heurePicMax.heure"
+          >
+            <div
+              class="heure-bar"
+              [style.height.%]="getHeureHeight(h.nb_commandes)"
+            ></div>
+            <span class="heure-label">{{ h.heure }}</span>
+          </div>
+        </div>
+
+        <ng-template #noData2>
+          <div class="empty-state">Aucune donnée horaire</div>
+        </ng-template>
+      </section>
+
+    </div>
+
+    <!-- ── Top produits + Top clients ────────── -->
+    <div class="two-col">
+
+      <!-- Top produits -->
+      <section class="section-card">
+        <h2 class="section-title">Top 5 produits</h2>
+
+        <div class="top-list" *ngIf="topProduits.length; else vide1">
+          <div class="top-item" *ngFor="let p of topProduits; let i = index">
+            <span class="top-rank" [class.rank-gold]="i === 0">#{{ i + 1 }}</span>
+            <img
+              *ngIf="p.image"
+              [src]="p.image"
+              [alt]="p.nom"
+              class="top-img"
+            />
+            <div *ngIf="!p.image" class="top-img top-img-placeholder">🛍</div>
+            <div class="top-info">
+              <div class="top-nom">{{ p.nom }}</div>
+              <div class="top-meta">{{ p.total_vendu }} vendu(s)</div>
+            </div>
+            <div class="top-ca">{{ formatMontant(p.ca_genere) }}</div>
+          </div>
+        </div>
+
+        <ng-template #vide1>
+          <div class="empty-state">Aucun produit vendu</div>
+        </ng-template>
+      </section>
+
+      <!-- Top clients -->
+      <section class="section-card">
+        <h2 class="section-title">Top 5 clients</h2>
+
+        <div class="top-list" *ngIf="topClients.length; else vide2">
+          <div class="top-item" *ngFor="let c of topClients; let i = index">
+            <span class="top-rank" [class.rank-gold]="i === 0">#{{ i + 1 }}</span>
+            <!-- <div class="top-avatar">
+              {{ c.email }}
+            </div> -->
+            <div class="top-info">
+              <div class="top-nom">{{ c.prenom }} {{ c.nom }}</div>
+              <div class="top-meta">{{ c.email }}</div>
+            </div>
+            <div class="top-right">
+              <div class="top-ca">{{ formatMontant(c.total_depense) }}</div>
+              <div class="top-meta">{{ c.nb_commandes }} commande(s)</div>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #vide2>
+          <div class="empty-state">Aucun client enregistré</div>
+        </ng-template>
+      </section>
+
+    </div>
+
+    <!-- ── Footer ──────────────────────────────── -->
+    <footer class="dash-footer">
+      Généré le {{ formatDate(dashboard.genere_le) }}
+    </footer>
+
+  </ng-container>
+
+</div>

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { ChangeDetectorRef, Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { UserService } from '../../../services/user/user.service'; // Corriger le chemin
@@ -21,14 +21,15 @@ export class Login {
   // Mapping des rôles vers les chemins
   private readonly roleRoutes: { [key: string]: string } = {
     'acheteur': '/boutique/all',
-    'boutique': '/boutique/profil',
+    'boutique': '/boutique/dashboard',
     'admin': '/admin/dashboard'
   };
 
 constructor(
   private userService: UserService,
   public authService: AuthService,   // ← public pour l'utiliser dans le template
-  private router: Router
+  private router: Router,
+  private cdr : ChangeDetectorRef
 ) {}
 
   // ngOnInit(): void {
@@ -77,6 +78,7 @@ login() {
             // this.router.navigate(['/articles'], { replaceUrl: true });
             // Rediriger en fonction du rôle
             this.redirectBasedOnRole(response.user.role);
+            this.cdr.markForCheck();
           }, 0);
 
         } catch (error) {

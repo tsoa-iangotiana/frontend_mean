@@ -78,6 +78,10 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.05);
   transition: transform 0.2s, box-shadow 0.2s;
   border: 1px solid #e2e8f0;
+
+  /* ✅ Ajout */
+  display: flex;
+  flex-direction: column;
 }
 
 .facture-card:hover {
@@ -117,7 +121,10 @@
 }
 
 /* ── Corps de carte ───────────────────────────────────────── */
-.card-body { padding: 1.5rem; }
+.card-body {
+  padding: 1.5rem;
+  flex: 1; /* ✅ Ajout — prend tout l'espace disponible */
+}
 
 .boutique-info, .date-info {
   display: flex;
@@ -167,8 +174,9 @@
 
 /* ── Section montant ──────────────────────────────────────── */
 .montant-section {
-  display: flex; justify-content: space-between; align-items: center;
-  margin-top: 1rem; padding-top: 0.5rem;
+  display: flex;
+  flex-direction: column; /* ✅ label au-dessus, valeur en dessous */
+  gap: 0.1rem;
 }
 .montant-label  { font-size: 0.95rem; color: #64748b; }
 .montant-valeur { font-size: 1.3rem; font-weight: 700; color: #1e293b; }
@@ -179,7 +187,9 @@
   background: #f8fafc;
   border-top: 1px solid #e2e8f0;
   display: flex;
-  gap: 0.75rem;
+  justify-content: space-between; /* ✅ montant à gauche, PDF à droite */
+  align-items: center;
+  margin-top: auto;
 }
 
 .btn-details {

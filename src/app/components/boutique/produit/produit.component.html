@@ -9,19 +9,19 @@
       ({{ totalItems }} produit(s))
     </small>
   </h2>
-  
+
   <!-- Boutons avec espacement réduit -->
   <div class="d-flex gap-2">
     <button class="btn btn-outline-info" (click)="openPromotionListModal()">
       <i class="fas fa-tags me-2"></i>
       Promotions
     </button>
-    
+
     <button class="btn btn-outline-success" (click)="openCreatePromotionModal()">
       <i class="fas fa-plus-circle me-2"></i>
       Nouvelle promotion
     </button>
-    
+
     <button class="btn btn-primary" (click)="openCreateModal()">
       <i class="fas fa-plus me-2"></i>
       Nouveau produit
@@ -113,26 +113,47 @@
         <div class="card produit-card h-100">
           <!-- Image et badges -->
           <div class="produit-image position-relative">
-            <img 
-              [src]="" 
+            <!-- Image active -->
+            <img
+              [src]="getCurrentImage(produit)"
               [alt]="produit.nom"
               class="card-img-top">
-            
+
+            <!-- Flèches (seulement si plusieurs images) -->
+            <ng-container *ngIf="produit.images.length > 1">
+              <button class="carousel-arrow arrow-left" (click)="prevImage(produit._id, $event)">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button class="carousel-arrow arrow-right" (click)="nextImage(produit._id, $event)">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+
+              <!-- Indicateurs (petits points) -->
+              <div class="carousel-dots">
+                <span
+                  *ngFor="let img of produit.images; let i = index"
+                  class="dot"
+                  [class.active]="getImageIndex(produit._id) === i"
+                  (click)="setImage(produit._id, i, $event)">
+                </span>
+              </div>
+            </ng-container>
+
             <!-- Badge promotion -->
-            <span class="badge bg-danger position-absolute top-22 start-0 m-2" 
+            <span class="badge bg-danger position-absolute top-22 start-0 m-2"
                   *ngIf="getProduitPromotionReduction(produit._id) as reduction">
               <i class="fas fa-tag me-1"></i>
               -{{ reduction }}%
             </span>
 
             <!-- Badge stock -->
-            <span class="badge stock-badge position-absolute top-0 end-0 m-2" 
+            <span class="badge stock-badge position-absolute top-0 end-0 m-2"
                   [ngClass]="'bg-' + getStockStatus(produit).class">
               {{ getStockStatus(produit).text }}
             </span>
 
             <!-- Badge statut -->
-            <span class="badge status-badge position-absolute bottom-0 end-0 m-2" 
+            <span class="badge status-badge position-absolute bottom-0 end-0 m-2"
                   [ngClass]="produit.actif ? 'bg-success' : 'bg-secondary'">
               {{ produit.actif ? 'Actif' : 'Inactif' }}
             </span>
@@ -144,19 +165,19 @@
             <p class="card-text text-muted small">
               {{ getCategorieName(produit) }}
             </p>
-            
+
             <div class="produit-details mt-3">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="fw-bold">Prix:</span>
                 <div class="text-end">
-                  <span *ngIf="getProduitPromotionReduction(produit._id) as reduction" 
+                  <span *ngIf="getProduitPromotionReduction(produit._id) as reduction"
                         class="text-decoration-line-through text-muted me-2 small">
                     {{ formatPrix(produit.prix) }}
                   </span>
-                  <span class="text-primary fs-5" 
+                  <span class="text-primary fs-5"
                         [ngClass]="{'text-danger': getProduitPromotionReduction(produit._id)}">
-                    {{ formatPrix(getProduitPromotionReduction(produit._id) ? 
-                        (produit.prix * (1 - getProduitPromotionReduction(produit._id)! / 100)) : 
+                    {{ formatPrix(getProduitPromotionReduction(produit._id) ?
+                        (produit.prix * (1 - getProduitPromotionReduction(produit._id)! / 100)) :
                         produit.prix) }}
                   </span>
                 </div>
@@ -164,7 +185,7 @@
               <div class="d-flex justify-content-between align-items-center">
                 <span class="fw-bold">Stock:</span>
                 <span>
-                  {{ produit.stock }} 
+                  {{ produit.stock }}
                   <small class="text-muted">{{ produit.unite }}</small>
                 </span>
               </div>
@@ -246,7 +267,7 @@
     </h5>
     <button type="button" class="btn-close" aria-label="Close" (click)="modal.dismiss()"></button>
   </div>
-  
+
   <div class="modal-body">
     <form [formGroup]="produitForm" (ngSubmit)="saveProduit()">
       <!-- Nom -->
@@ -279,9 +300,9 @@
       <div class="row">
         <!-- Prix -->
         <div class="col-md-6 mb-3">
-          <label class="form-label">Prix (EUR) <span class="text-danger">*</span></label>
+          <label class="form-label">Prix  <span class="text-danger">*</span></label>
           <div class="input-group">
-            <span class="input-group-text">EUR</span>
+            <span class="input-group-text">MGA</span>
             <input
               type="number"
               class="form-control"
@@ -344,8 +365,11 @@
                 <i class="fas fa-times"></i>
               </button>
             </div>
+            <small class="text-muted d-block mt-1">
+              Mettre au moins une image
+            </small>
           </div>
-          
+
           <div class="upload-area" *ngIf="imagePreviews.length < 5">
             <input
               type="file"
@@ -362,9 +386,9 @@
              <!-- Solution plus "Angular" mais qui nécessite un peu de code supplémentaire : -->
            <label for="imageInput" class="btn btn-outline-primary mb-0">
               <i class="fas fa-cloud-upload-alt me-2"></i>
-              Ajouter des images  </label>   
+              Charger vos images  </label>
             <small class="text-muted d-block mt-1">
-              Max 5 images (JPEG, PNG, GIF - 5MB max)
+              Format d'image (JPEG, PNG, GIF - 5MB max)
             </small>
           </div>
         </div>
@@ -389,9 +413,9 @@
       <i class="fas fa-times me-2"></i>
       Annuler
     </button>
-    <button 
-      type="button" 
-      class="btn btn-primary" 
+    <button
+      type="button"
+      class="btn btn-primary"
       (click)="saveProduit()"
       [disabled]="produitForm.invalid || uploadingImage">
       <i class="fas" [ngClass]="isEditing ? 'fa-save' : 'fa-plus-circle'"></i>
@@ -444,9 +468,9 @@
     <button type="button" class="btn btn-secondary" (click)="modal.dismiss()">
       Annuler
     </button>
-    <button 
-      type="button" 
-      class="btn btn-primary" 
+    <button
+      type="button"
+      class="btn btn-primary"
       (click)="updateStock()"
       [disabled]="stockForm.invalid">
       <i class="fas fa-save me-2"></i>
@@ -467,7 +491,7 @@
 
   <div class="modal-body">
     <p>
-      Êtes-vous sûr de vouloir supprimer le produit 
+      Êtes-vous sûr de vouloir supprimer le produit
       <strong>"{{ selectedProduit?.nom }}"</strong> ?
     </p>
     <p class="text-muted small">
@@ -523,17 +547,17 @@
             </p>
           </div>
           <div class="btn-group">
-            <button class="btn btn-sm btn-outline-primary" 
+            <button class="btn btn-sm btn-outline-primary"
                     (click)="openEditPromotionModal(promotion); modal.dismiss()"
                     title="Modifier la promotion">
               <i class="fas fa-edit"></i>
             </button>
-            <button class="btn btn-sm btn-outline-info" 
+            <button class="btn btn-sm btn-outline-info"
                     (click)="openManagePromotionModal(promotion); modal.dismiss()"
                     title="Gérer les produits">
               <i class="fas fa-boxes"></i>
             </button>
-            <button class="btn btn-sm btn-outline-danger" 
+            <button class="btn btn-sm btn-outline-danger"
                     (click)="deletePromotion(promotion, $event)"
                     title="Supprimer la promotion">
               <i class="fas fa-trash"></i>

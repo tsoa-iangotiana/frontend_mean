@@ -167,25 +167,32 @@ export class ProduitService {
     }
   }
 
-  /**
-   * Mettre à jour un produit
-   */
-  updateProduit(id: string, produit: Partial<ProduitInput>): Observable<Produit> {
-    try {
-      const boutiqueId = this.getBoutiqueId();
+  updateProduit(id: string, produit: Partial<ProduitInput>, files?: File[], existingImages?: string[]): Observable<Produit> {
+    const boutiqueId = this.getBoutiqueId();
+    const formData = new FormData();
 
-      return this.http.put<Produit>(
-        `${this.apiUrl}/${id}`,
-        {
-          ...produit,
-          boutiqueId  // ← Pour vérification back-end
-        }
-      ).pipe(
-        catchError(this.handleError('mise à jour du produit'))
-      );
-    } catch (error) {
-      return throwError(() => error);
+    formData.append('nom', produit.nom || '');
+    formData.append('description', produit.description || '');
+    formData.append('prix', String(produit.prix || 0));
+    formData.append('unite', produit.unite || '');
+    formData.append('stock', String(produit.stock || 0));
+    formData.append('categorie', produit.categorie || '');
+    formData.append('actif', String(produit.actif ?? true));
+    formData.append('boutiqueId', boutiqueId);
+
+    // ✅ Images existantes à conserver (celles non supprimées)
+    if (existingImages && existingImages.length > 0) {
+      existingImages.forEach(url => {
+        formData.append('existingImages', url);
+      });
     }
+
+    // ✅ Nouvelles images
+    if (files && files.length > 0) {
+      files.forEach(file => formData.append('images', file));
+    }
+
+    return this.http.put<Produit>(`${this.apiUrl}/${id}`, formData);
   }
 
   /**
@@ -248,25 +255,17 @@ export class ProduitService {
   /**
    * Upload d'images pour un produit
    */
-  uploadProductImages(produitId: string, files: File[]): Observable<{ images: string[] }> {
-    try {
-      const boutiqueId = this.getBoutiqueId();
-      const formData = new FormData();
+  uploadProductImages(produitId: string, files: File[]) {
+    const formData = new FormData();
 
-      files.forEach(file => {
-        formData.append('images', file);
-      });
-      formData.append('boutiqueId', boutiqueId);
+    files.forEach(file => {
+      formData.append('images', file);
+    });
 
-      return this.http.post<{ images: string[] }>(
-        `${environment.apiUrl}/upload/produit-images/${produitId}`,
-        formData
-      ).pipe(
-        catchError(this.handleError('upload des images'))
-      );
-    } catch (error) {
-      return throwError(() => error);
-    }
+    return this.http.post(
+      `${this.apiUrl}/${produitId}/images`,
+      formData
+    );
   }
 
   /**

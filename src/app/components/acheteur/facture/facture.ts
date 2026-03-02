@@ -332,12 +332,6 @@ export class Facture implements OnInit, OnDestroy {
       this.formatPrice(p.prix_unitaire * p.quantite),
     ]);
 
-    // Si la commande a plus de produits que l'aperçu, on le note
-    if (commande.nombre_articles > commande.apercu_produits.length) {
-      const reste = commande.nombre_articles - commande.apercu_produits.length;
-      lignes.push([`... et ${reste} autre(s) article(s)`, '', '', '']);
-    }
-
     autoTable(doc, {
       startY: 68,
       head: [['Produit', 'Qté', 'Prix unitaire', 'Sous-total']],
@@ -401,11 +395,16 @@ export class Facture implements OnInit, OnDestroy {
   // ─────────────────────────────────────────────────────────────────────────
 
   formatPrice(prix: number): string {
-    return new Intl.NumberFormat('fr-MG', {
-      style: 'currency',
-      currency: 'MGA',
-      minimumFractionDigits: 0
-    }).format(prix);
+    // On force le séparateur de milliers à "." pour éviter le "/" du locale fr-MG
+    const nombre = new Intl.NumberFormat('fr-FR', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    })
+      .format(prix)
+      .replace(/\s/g, '.')   // fr-FR utilise l'espace insécable → on remplace par "."
+      .replace(/,/g, '.');   // sécurité sur la virgule éventuelle
+
+    return `${nombre} Ar`;
   }
 
   getStatutClass(statut: string): string {
