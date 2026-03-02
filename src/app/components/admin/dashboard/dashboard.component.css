@@ -17,7 +17,6 @@
 /* ─── Layout global ─────────────────────────────────────────────────────── */
 .dashboard-container {
   padding: 24px;
-  background-color: #f4f6f9;
   min-height: 100vh;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   color: var(--dark);
@@ -55,7 +54,7 @@
   background: var(--primary);
   color: var(--white);
   border: none;
-  border-radius: var(--radius);
+  border-radius: 10px;
   cursor: pointer;
   font-size: 0.85rem;
   transition: background 0.2s;
@@ -74,10 +73,10 @@
 }
 
 .kpi-card {
-  background: var(--white);
-  border-radius: var(--radius);
+  background: var(--secondary);
+  border-radius: 10px;
   padding: 20px;
-  box-shadow: var(--shadow);
+  box-shadow:  0 4px 16px rgba(0, 0, 0, 0.12);
   border-left: 4px solid var(--primary);
   transition: transform 0.2s, box-shadow 0.2s;
 }
@@ -120,9 +119,9 @@
 
 .kpi-mini {
   background: var(--white);
-  border-radius: var(--radius);
+  border-radius: 10px;
   padding: 14px 20px;
-  box-shadow: var(--shadow);
+  box-shadow:  0 4px 16px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -147,7 +146,7 @@
   border-radius: var(--radius);
   padding: 24px;
   margin-bottom: 24px;
-  box-shadow: var(--shadow);
+  box-shadow:  0 4px 16px rgba(0, 0, 0, 0.12);;
 }
 
 .dashboard-section h2 {
@@ -199,6 +198,7 @@
 .stats-container.half {
   flex: 1 1 calc(50% - 10px);
   min-width: 280px;
+
 }
 
 .stats-container.third {

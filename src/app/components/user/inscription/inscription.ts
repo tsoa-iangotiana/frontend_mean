@@ -41,4 +41,8 @@ export class Inscription implements OnInit {
       }
     });
   }
+
+  goToLogin(): void {
+    this.routeur.navigate(['/login']);
+  }
 }

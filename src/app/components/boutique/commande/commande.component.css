@@ -28,20 +28,21 @@
   --gray-700: #374151;
   --gray-800: #1f2937;
   --gray-900: #111827;
-  
+
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-  
+
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --radius-full: 9999px;
-  
+
   --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 
 /* ── Layout principal ──────────────────────────────────────────────────── */
 .commandes-container {
@@ -958,45 +959,45 @@
   .commandes-container {
     padding: 1rem;
   }
-  
+
   .page-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
   }
-  
+
   .btn-filtre {
     align-self: flex-end;
   }
-  
+
   .client-montant-row {
     flex-direction: column;
     gap: 1rem;
   }
-  
+
   .montant-info {
     text-align: left;
     width: 100%;
   }
-  
+
   .articles-count {
     justify-content: flex-start;
   }
-  
+
   .produits-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .card-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
   }
-  
+
   .header-right {
     align-self: flex-end;
   }
-  
+
   .tri-rapide {
     flex-direction: column;
     align-items: flex-end;
@@ -1007,33 +1008,369 @@
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .filtres-actions {
     flex-direction: column;
   }
-  
+
   .btn-reset,
   .btn-apply {
     width: 100%;
     justify-content: center;
   }
-  
+
   .tri-buttons {
     flex-wrap: wrap;
   }
-  
+
   .tri-btn {
     flex: 1;
   }
-  
+
   .modal-recap .recap-row {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
   }
-  
+
   .recap-value.adresse {
     text-align: left;
     max-width: 100%;
   }
+}
+
+
+/* ===== ANIMATIONS D'ENTRÉE POUR LES COMMANDES ===== */
+
+/* Animation de base : fade in + léger déplacement */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation pour l'en-tête et les éléments principaux */
+.page-header {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+/* Animation des statistiques (effet cascade) */
+.stat-card {
+  animation: fadeInUp 0.5s ease forwards;
+  opacity: 0;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.2s; }
+.stat-card:nth-child(3) { animation-delay: 0.3s; }
+.stat-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Animation du panel de filtres */
+.filtres-panel {
+  animation: scaleIn 0.4s ease forwards;
+}
+
+/* Animation de la barre de résultats */
+.resultats-bar {
+  animation: fadeIn 0.5s ease forwards;
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+
+/* Animation des cartes de commandes (effet cascade) */
+.commande-card {
+  animation: fadeInUp 0.6s ease forwards;
+  opacity: 0;
+}
+
+/* Délais pour chaque carte (jusqu'à 20 cartes) */
+.commande-card:nth-child(1) { animation-delay: 0.1s; }
+.commande-card:nth-child(2) { animation-delay: 0.15s; }
+.commande-card:nth-child(3) { animation-delay: 0.2s; }
+.commande-card:nth-child(4) { animation-delay: 0.25s; }
+.commande-card:nth-child(5) { animation-delay: 0.3s; }
+.commande-card:nth-child(6) { animation-delay: 0.35s; }
+.commande-card:nth-child(7) { animation-delay: 0.4s; }
+.commande-card:nth-child(8) { animation-delay: 0.45s; }
+.commande-card:nth-child(9) { animation-delay: 0.5s; }
+.commande-card:nth-child(10) { animation-delay: 0.55s; }
+.commande-card:nth-child(11) { animation-delay: 0.6s; }
+.commande-card:nth-child(12) { animation-delay: 0.65s; }
+.commande-card:nth-child(13) { animation-delay: 0.7s; }
+.commande-card:nth-child(14) { animation-delay: 0.75s; }
+.commande-card:nth-child(15) { animation-delay: 0.8s; }
+.commande-card:nth-child(16) { animation-delay: 0.85s; }
+.commande-card:nth-child(17) { animation-delay: 0.9s; }
+.commande-card:nth-child(18) { animation-delay: 0.95s; }
+.commande-card:nth-child(19) { animation-delay: 1.0s; }
+.commande-card:nth-child(20) { animation-delay: 1.05s; }
+
+/* Animation de l'état vide */
+.empty-state {
+  animation: scaleIn 0.5s ease forwards;
+}
+
+/* Animation de la pagination */
+.pagination-container {
+  animation: fadeIn 0.6s ease forwards;
+  animation-delay: 0.5s;
+  opacity: 0;
+}
+
+/* Animation pour les badges et éléments individuels */
+.badge-statut, .badge-type {
+  animation: fadeIn 0.3s ease forwards;
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+
+/* Animation de survol améliorée pour les cartes */
+.commande-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.commande-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Animation pour les produits dans la carte */
+.produit-item {
+  animation: fadeIn 0.4s ease forwards;
+  opacity: 0;
+}
+
+.produit-item:nth-child(1) { animation-delay: 0.2s; }
+.produit-item:nth-child(2) { animation-delay: 0.25s; }
+.produit-item:nth-child(3) { animation-delay: 0.3s; }
+.produit-item:nth-child(4) { animation-delay: 0.35s; }
+.produit-item:nth-child(5) { animation-delay: 0.4s; }
+
+/* Animation pour le loader */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.loader-container {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+/* Animation pour les boutons d'action */
+.btn-action, .btn-livrer, .btn-recuperer {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-action:hover, .btn-livrer:hover, .btn-recuperer:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 15px -3px rgba(0, 0, 0, 0.2);
+}
+
+/* Animation pour le modal */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-content {
+  animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Animation pour les tooltips et infos supplémentaires */
+.meta-item, .recap-row {
+  transition: all 0.2s ease;
+}
+
+.meta-item:hover {
+  transform: translateX(2px);
+  color: var(--primary);
+}
+
+/* Effet de ripple pour les boutons de filtre */
+.btn-filtre {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-filtre::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
+}
+
+.btn-filtre:focus:not(:active)::after {
+  animation: ripple 1s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  20% {
+    transform: scale(25, 25);
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(40, 40);
+  }
+}
+
+/* Animation pour les changements de filtre */
+.filtres-panel {
+  transition: all 0.3s ease;
+}
+
+.filtres-panel.ng-enter {
+  animation: slideDown 0.3s ease;
+}
+
+.filtres-panel.ng-leave {
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-1rem);
+  }
+}
+
+/* Animation pour les nombres qui changent (statistiques) */
+.stat-value {
+  transition: all 0.3s ease;
+}
+
+.stat-value:hover {
+  transform: scale(1.05);
+  color: var(--primary);
+}
+
+/* Animation pour la bordure de focus */
+.filtre-input:focus, .filtre-select:focus {
+  transition: all 0.2s ease;
+  transform: translateY(-1px);
+}
+
+/* Animation pour les messages de statut */
+.statut-message {
+  animation: fadeIn 0.4s ease forwards;
+  transition: all 0.3s ease;
+}
+
+.statut-message:hover {
+  transform: scale(1.02);
+}
+
+/* Animation pour la pagination */
+::ng-deep .page-link {
+  transition: all 0.2s ease !important;
+}
+
+::ng-deep .page-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
+}
+
+/* Animation d'entrée pour les icônes */
+.stat-icon i {
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover .stat-icon i {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Animation pour les séparateurs */
+.recap-divider {
+  transition: all 0.3s ease;
+}
+
+.recap-divider:hover {
+  transform: scaleX(1.02);
+  background: var(--primary);
+}
+
+/* Animation pour les badges de promotion */
+.badge-attente {
+  transition: all 0.3s ease;
+}
+
+.badge-attente:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+}
+
+/* Effet de brillance sur les cartes au survol */
+.commande-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.commande-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: left 0.7s ease;
+}
+
+.commande-card:hover::before {
+  left: 100%;
 }

@@ -13,13 +13,13 @@
         + Nouvelle boutique
       </button>
     </div>
-    
+
     <div class="boutiques-list">
-      <div 
-        *ngFor="let boutique of mesBoutiques" 
+      <div
+        *ngFor="let boutique of mesBoutiques"
         class="boutique-card"
         [class.active]="boutiqueSelectionnee?._id === boutique._id">
-        
+
         <div class="boutique-card-content" (click)="selectionnerBoutique(boutique)">
           <div class="boutique-card-photo">
             <img *ngIf="boutique.profil_photo" [src]="boutique.profil_photo" alt="Photo">
@@ -27,7 +27,7 @@
               {{ boutique.nom?.charAt(0) }}
             </div>
           </div>
-          
+
           <div class="boutique-card-info">
             <h3>{{ boutique.nom }}</h3>
             <span class="badge" [class.active]="boutique.active">
@@ -35,10 +35,10 @@
             </span>
           </div>
         </div>
-        
+
         <!-- Bouton Modifier pour chaque boutique -->
         <button type="button" class="btn-edit-card" (click)="modeEdition(boutique); $event.stopPropagation()">
-          ✎ 
+          ✎
         </button>
       </div>
     </div>
@@ -59,7 +59,7 @@
   <!-- Formulaire de création/édition -->
   <div *ngIf="isCreating || isEditing" class="boutique-form">
     <h2>{{ isCreating ? 'Créer une boutique' : 'Modifier la boutique' }}</h2>
-    
+
     <form [formGroup]="boutiqueForm" (ngSubmit)="sauvegarder()">
       <!-- Photo de profil -->
       <div class="form-group photo-section">
@@ -70,8 +70,8 @@
             <p>Ajouter une photo</p>
           </div>
         </div>
-        <input 
-          type="file" 
+        <input
+          type="file"
           #fileInput
           style="display: none"
           accept="image/*"
@@ -81,8 +81,8 @@
       <!-- Informations de base -->
       <div class="form-group">
         <label for="nom">Nom de la boutique *</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           id="nom"
           formControlName="nom"
           placeholder="Ex: Tech Store">
@@ -93,8 +93,8 @@
 
       <div class="form-group">
         <label for="slogan">Slogan</label>
-        <input 
-          type="text" 
+        <input
+          type="text"
           id="slogan"
           formControlName="slogan"
           placeholder="Votre slogan accrocheur">
@@ -102,7 +102,7 @@
 
       <div class="form-group">
         <label for="description">Description</label>
-        <textarea 
+        <textarea
           id="description"
           formControlName="description"
           rows="4"
@@ -112,7 +112,7 @@
 
       <div class="form-group">
         <label for="condition_vente">Conditions de vente</label>
-        <textarea 
+        <textarea
           id="condition_vente"
           formControlName="condition_vente"
           rows="3"
@@ -129,10 +129,10 @@
             <button type="button" class="btn-remove" (click)="supprimerContact(i)">×</button>
           </div>
         </div>
-        
+
         <div class="add-contact">
-          <input 
-            type="text" 
+          <input
+            type="text"
             [(ngModel)]="newContact"
             [ngModelOptions]="{standalone: true}"
             placeholder="Téléphone, email, réseau social...">
@@ -144,8 +144,8 @@
       <div class="form-group">
         <label>Catégories</label>
         <div class="categories-grid">
-          <div 
-            *ngFor="let cat of categoriesDisponibles" 
+          <div
+            *ngFor="let cat of categoriesDisponibles"
             class="categorie-chip"
             [class.selected]="isCategorieSelected(cat._id)"
             (click)="toggleCategorie(cat._id)">
@@ -175,11 +175,11 @@
           {{ boutiqueSelectionnee?.nom?.charAt(0) }}
         </div>
       </div>
-      
+
       <div class="boutique-info">
         <h1>{{ boutiqueSelectionnee?.nom }}</h1>
         <p class="slogan" *ngIf="boutiqueSelectionnee?.slogan">"{{ boutiqueSelectionnee?.slogan }}"</p>
-        
+
         <div class="badges">
           <span class="badge" [class.active]="boutiqueSelectionnee?.active">
             {{ boutiqueSelectionnee?.active ? 'Active' : 'En attente' }}

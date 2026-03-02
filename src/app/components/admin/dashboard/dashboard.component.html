@@ -6,7 +6,7 @@
     <div class="last-update">
       Dernière mise à jour: {{ lastUpdate | date:'dd/MM/yyyy HH:mm:ss' }}
       <button (click)="refreshDashboard()" class="btn-refresh">
-        🔄 Rafraîchir
+        <i class="fas fa-sync-alt"></i> Rafraîchir
       </button>
     </div>
   </div>
@@ -325,17 +325,3 @@
     </p>
   </div>
 </ng-template>
-
-<!-- Panneau de débogage -->
-<div class="debug-panel" *ngIf="showDebug">
-  <h3>Logs de débogage</h3>
-  <div class="debug-logs">
-    <div *ngFor="let log of debugLogs" class="debug-log">{{ log }}</div>
-  </div>
-  <button (click)="toggleDebug()">Fermer</button>
-</div>
-
-<!-- Bouton de débogage -->
-<button *ngIf="!showDebug" (click)="toggleDebug()" class="debug-toggle">
-  🐛 Debug
-</button>

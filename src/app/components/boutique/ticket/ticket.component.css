@@ -554,15 +554,15 @@ h2 i {
   .tickets-container {
     padding: 1.2rem;
   }
-  
+
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .ticket-header {
     flex-direction: column;
   }
-  
+
   .ticket-date {
     align-self: flex-start;
   }
@@ -572,45 +572,45 @@ h2 i {
   .tickets-container {
     padding: 1rem;
   }
-  
+
   h2 {
     font-size: 1.5rem;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
     gap: 0.5rem;
   }
-  
+
   .stat-card {
     padding: 0.6rem 0.8rem;
   }
-  
+
   .stat-icon {
     font-size: 1.2rem;
   }
-  
+
   .stat-value {
     font-size: 1.1rem;
   }
-  
+
   .filters-card .card-body {
     padding: 1.2rem;
   }
-  
+
   .ticket-actions {
     justify-content: flex-start;
   }
-  
+
   .ticket-actions .btn-group {
     flex-wrap: wrap;
   }
-  
+
   .detail-row {
     flex-direction: column;
     gap: 0.3rem;
   }
-  
+
   .detail-row strong {
     min-width: auto;
   }
@@ -621,34 +621,34 @@ h2 i {
     flex-direction: column;
     width: 100%;
   }
-  
+
   .ticket-badges .badge {
     width: 100%;
     text-align: center;
   }
-  
+
   .ticket-actions .btn-group {
     width: 100%;
   }
-  
+
   .ticket-actions .btn {
     flex: 1;
   }
-  
+
   .modal-body {
     padding: 1.2rem;
   }
-  
+
   .pagination-container {
     overflow-x: auto;
     padding: 0.5rem 0;
   }
-  
+
   ::ng-deep .ngb-pagination {
     display: flex;
     flex-wrap: nowrap;
   }
-  
+
   ::ng-deep .ngb-pagination .page-link {
     padding: 0.4rem 0.7rem;
     font-size: 0.85rem;
@@ -660,14 +660,14 @@ h2 i {
   .tickets-container {
     padding: 0;
   }
-  
+
   .filters-card,
   .ticket-actions,
   .pagination-container,
   .btn {
     display: none !important;
   }
-  
+
   .ticket-card {
     break-inside: avoid;
     border: 1px solid #ddd;
@@ -720,4 +720,421 @@ h2 i {
 .system-comment .avatar-circle {
   background-color: #e0e0e0;
 }
+}
+
+/* ===== ANIMATIONS D'ENTRÉE POUR LES TICKETS ===== */
+
+/* Animation de base : fade in + léger déplacement */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Animation pour l'en-tête */
+h2 {
+  animation: fadeInUp 0.5s ease forwards;
+}
+
+/* Animation des statistiques (effet cascade) */
+.stat-card {
+  animation: fadeInUp 0.5s ease forwards;
+  opacity: 0;
+}
+
+.stat-card:nth-child(1) { animation-delay: 0.1s; }
+.stat-card:nth-child(2) { animation-delay: 0.15s; }
+.stat-card:nth-child(3) { animation-delay: 0.2s; }
+.stat-card:nth-child(4) { animation-delay: 0.25s; }
+.stat-card:nth-child(5) { animation-delay: 0.3s; }
+
+/* Animation du panel de filtres */
+.filters-card {
+  animation: scaleIn 0.4s ease forwards;
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+
+/* Animation des cartes de tickets (effet cascade) */
+.ticket-card {
+  animation: slideInRight 0.5s ease forwards;
+  opacity: 0;
+}
+
+/* Délais pour chaque ticket (jusqu'à 20 tickets) */
+.ticket-card:nth-child(1) { animation-delay: 0.1s; }
+.ticket-card:nth-child(2) { animation-delay: 0.15s; }
+.ticket-card:nth-child(3) { animation-delay: 0.2s; }
+.ticket-card:nth-child(4) { animation-delay: 0.25s; }
+.ticket-card:nth-child(5) { animation-delay: 0.3s; }
+.ticket-card:nth-child(6) { animation-delay: 0.35s; }
+.ticket-card:nth-child(7) { animation-delay: 0.4s; }
+.ticket-card:nth-child(8) { animation-delay: 0.45s; }
+.ticket-card:nth-child(9) { animation-delay: 0.5s; }
+.ticket-card:nth-child(10) { animation-delay: 0.55s; }
+.ticket-card:nth-child(11) { animation-delay: 0.6s; }
+.ticket-card:nth-child(12) { animation-delay: 0.65s; }
+.ticket-card:nth-child(13) { animation-delay: 0.7s; }
+.ticket-card:nth-child(14) { animation-delay: 0.75s; }
+.ticket-card:nth-child(15) { animation-delay: 0.8s; }
+.ticket-card:nth-child(16) { animation-delay: 0.85s; }
+.ticket-card:nth-child(17) { animation-delay: 0.9s; }
+.ticket-card:nth-child(18) { animation-delay: 0.95s; }
+.ticket-card:nth-child(19) { animation-delay: 1.0s; }
+.ticket-card:nth-child(20) { animation-delay: 1.05s; }
+
+/* Animation de l'état vide */
+.text-center.py-5 {
+  animation: scaleIn 0.5s ease forwards;
+}
+
+/* Animation de la pagination */
+.pagination-container {
+  animation: fadeIn 0.6s ease forwards;
+  animation-delay: 0.4s;
+  opacity: 0;
+}
+
+/* Animation pour les badges dans les tickets */
+.ticket-badges .badge {
+  animation: fadeIn 0.3s ease forwards;
+  animation-delay: 0.2s;
+  opacity: 0;
+}
+
+/* Animation améliorée au survol des cartes */
+.ticket-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ticket-card:hover {
+  transform: translateX(8px) translateY(-2px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+/* Animation pour les actions */
+.ticket-actions .btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ticket-actions .btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Animation pour les commentaires */
+.comment-item {
+  animation: fadeInUp 0.4s ease forwards;
+  opacity: 0;
+}
+
+.comment-item:nth-child(1) { animation-delay: 0.1s; }
+.comment-item:nth-child(2) { animation-delay: 0.15s; }
+.comment-item:nth-child(3) { animation-delay: 0.2s; }
+.comment-item:nth-child(4) { animation-delay: 0.25s; }
+.comment-item:nth-child(5) { animation-delay: 0.3s; }
+
+/* Animation pour le loader */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.spinner-border {
+  animation: spin 0.8s linear infinite, pulse 1.5s ease-in-out infinite !important;
+}
+
+/* Animation pour les modals */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-content {
+  animation: modalFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Animation pour les dropdowns */
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+::ng-deep .dropdown-menu {
+  animation: dropdownFadeIn 0.2s ease forwards;
+}
+
+/* Animation pour les détails du ticket */
+.ticket-details .detail-row {
+  animation: fadeIn 0.3s ease forwards;
+  opacity: 0;
+}
+
+.ticket-details .detail-row:nth-child(1) { animation-delay: 0.1s; }
+.ticket-details .detail-row:nth-child(2) { animation-delay: 0.15s; }
+.ticket-details .detail-row:nth-child(3) { animation-delay: 0.2s; }
+.ticket-details .detail-row:nth-child(4) { animation-delay: 0.25s; }
+.ticket-details .detail-row:nth-child(5) { animation-delay: 0.3s; }
+.ticket-details .detail-row:nth-child(6) { animation-delay: 0.35s; }
+
+/* Effet de brillance sur les cartes au survol */
+.ticket-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.ticket-card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+.ticket-card:hover::after {
+  left: 100%;
+}
+
+/* Animation pour les icônes de priorité */
+.ticket-badges .badge i {
+  transition: transform 0.2s ease;
+}
+
+.ticket-badges .badge:hover i {
+  transform: rotate(10deg) scale(1.1);
+}
+
+/* Animation pour la date */
+.ticket-date {
+  transition: all 0.2s ease;
+}
+
+.ticket-date:hover {
+  background: #e9ecef;
+  transform: scale(1.02);
+}
+
+/* Animation pour la description */
+.ticket-description {
+  transition: all 0.3s ease;
+}
+
+.ticket-description:hover {
+  background: #ffffff;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+  transform: translateY(-2px);
+}
+
+/* Animation pour les boutons de filtre */
+.btn-outline-secondary {
+  transition: all 0.3s ease;
+}
+
+.btn-outline-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Animation pour le formulaire */
+.form-control, .form-select {
+  transition: all 0.2s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,123,255,0.2);
+}
+
+/* Animation pour les avatars dans les commentaires */
+.avatar-circle {
+  transition: all 0.3s ease;
+}
+
+.comment-item:hover .avatar-circle {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Animation pour le bouton Nouveau ticket */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,123,255,0.3);
+}
+
+.btn-primary::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1, 1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
+}
+
+.btn-primary:focus:not(:active)::after {
+  animation: ripple 1s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0, 0);
+    opacity: 0.5;
+  }
+  20% {
+    transform: scale(25, 25);
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(40, 40);
+  }
+}
+
+/* Animation pour la barre de recherche */
+.input-group {
+  transition: all 0.3s ease;
+}
+
+.input-group:focus-within {
+  transform: scale(1.01);
+  box-shadow: 0 4px 12px rgba(0,123,255,0.2);
+}
+
+/* Animation pour le compteur de tickets */
+h2 small {
+  transition: all 0.3s ease;
+  display: inline-block;
+}
+
+h2:hover small {
+  transform: scale(1.05);
+  color: #007bff;
+}
+
+/* Animation pour les messages de résolution */
+.ticket-resolution {
+  animation: fadeIn 0.4s ease forwards;
+  transition: all 0.3s ease;
+}
+
+.ticket-resolution:hover {
+  transform: translateX(5px);
+  color: #28a745;
+}
+
+/* Animation pour les séparateurs */
+hr {
+  transition: all 0.3s ease;
+}
+
+hr:hover {
+  transform: scaleX(1.02);
+  border-color: #007bff;
+}
+
+/* Animation pour les tooltips */
+[title] {
+  position: relative;
+}
+
+[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  background: #2c3e50;
+  color: white;
+  font-size: 12px;
+  border-radius: 4px;
+  white-space: nowrap;
+  animation: tooltipFadeIn 0.2s ease;
+  z-index: 1000;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Animation pour le chargement des commentaires */
+.loading-comments {
+  animation: pulse 1.5s ease-in-out infinite;
 }
